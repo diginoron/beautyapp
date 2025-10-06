@@ -41,11 +41,9 @@ const App: React.FC = () => {
                         setCurrentUser({ uid: user.uid, email: user.email!, firstName: 'کاربر', lastName: '', mobile: '' });
                     }
                 } catch (firestoreError: any) {
-                    console.error("Firestore connection error on getting user profile:", String(firestoreError));
-                    // As requested, the UI error message for Firestore connection issues has been disabled.
-                    // The app will proceed with fallback user data.
-                    // setConnectionError('خطا در اتصال به پایگاه داده. این ممکن است به دلیل مشکل در اینترنت شما یا یک خطای پیکربندی در سرور باشد. لطفاً دقایقی دیگر دوباره امتحان کنید.');
-                    // Create a fallback user object so the app doesn't crash
+                    console.error("Firestore connection error on getting user profile:", { code: firestoreError.code, message: firestoreError.message });
+                    // As requested, the user-facing error message for connection issues is removed.
+                    // The app will proceed with a fallback user object to avoid crashing.
                     setCurrentUser({ uid: user.uid, email: user.email!, firstName: 'کاربر', lastName: '', mobile: '' });
                 }
             } else {
@@ -122,7 +120,7 @@ const App: React.FC = () => {
                 setError(result.errorMessage || 'چهره‌ای در تصویر شناسایی نشد یا تصویر نامعتبر است.');
             }
         } catch (err) {
-            console.error(err);
+            console.error("Analysis Error:", String(err));
             setError('خطایی در هنگام تحلیل تصویر رخ داد. لطفاً دوباره تلاش کنید.');
         } finally {
             setIsLoading(false);

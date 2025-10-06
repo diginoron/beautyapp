@@ -27,13 +27,29 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToForgotPasswor
             // onAuthStateChanged in App.tsx will handle successful login
         } catch (err: any) {
             console.error('Login Error:', { code: err.code, message: err.message });
-            if (err.code === 'auth/invalid-api-key') {
-                setError('پیکربندی برنامه نامعتبر است. لطفاً با مدیر سیستم تماس بگیرید.');
-            } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-                setError('ایمیل یا رمز عبور نامعتبر است.');
-            } else {
-                setError('خطایی در فرآیند ورود رخ داد.');
+            let errorMessage = 'خطایی در فرآیند ورود رخ داد. لطفاً دوباره تلاش کنید.'; // Default message
+            
+            if (err && err.code) {
+                switch (err.code) {
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                    case 'auth/invalid-credential':
+                        errorMessage = 'ایمیل یا رمز عبور نامعتبر است.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'خطا در اتصال به شبکه. لطفاً اینترنت خود را بررسی کنید.';
+                        break;
+                    default:
+                        // For other Firebase errors, show a generic message but log the specific code.
+                        console.log(`Unhandled Firebase auth error: ${err.code}`);
+                        break; // Keep the default message
+                }
+            } else if (err && err.message) {
+                 // For non-Firebase errors that have a message property
+                 errorMessage = `خطای ورود: ${err.message}`;
             }
+
+            setError(errorMessage);
         }
     };
 

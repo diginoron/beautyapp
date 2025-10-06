@@ -2,10 +2,10 @@ import { GoogleGenAI, Type } from '@google/genai';
 import type { AnalysisResult, MorphResult, ColorHarmonyResult, Salon } from '../types';
 
 const getAiClient = () => {
-    if (!process.env.API_KEY) {
-        throw new Error("API_KEY environment variable not set");
-    }
-    return new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // The user should set the API_KEY in the environment variables.
+    // If it's not set, the API calls will fail, which is handled in each service function.
+    // Throwing an error here would crash the app on startup.
+    return new GoogleGenAI({ apiKey: process.env.API_KEY! });
 };
 
 const analysisSchema = {

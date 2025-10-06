@@ -41,7 +41,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
                 email,
             }).catch((firestoreError: any) => {
                 // Log the error for debugging, but don't block the user flow.
-                console.error("Non-critical error: Failed to create user document in Firestore during signup:", String(firestoreError));
+                console.error("Non-critical error: Failed to create user document in Firestore during signup:", { code: firestoreError.code, message: firestoreError.message });
             });
             
             setSuccess('ثبت‌نام با موفقیت انجام شد! به زودی وارد خواهید شد.');
@@ -49,13 +49,31 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
 
         } catch (err: any) {
             console.error('Signup Error:', { code: err.code, message: err.message });
-            if (err.code === 'auth/email-already-in-use') {
-                setError('کاربری با این ایمیل قبلاً ثبت‌نام کرده است.');
-            } else if (err.code === 'auth/weak-password') {
-                setError('رمز عبور باید حداقل ۶ کاراکتر باشد.');
-            } else {
-                setError('خطایی در فرآیند ثبت‌نام رخ داد.');
+            let errorMessage = 'خطایی در فرآیند ثبت‌نام رخ داد. لطفاً دوباره تلاش کنید.'; // Default message
+
+            if (err && err.code) {
+                switch (err.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage = 'کاربری با این ایمیل قبلاً ثبت‌نام کرده است.';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = 'رمز عبور باید حداقل ۶ کاراکتر باشد.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'فرمت ایمیل وارد شده نامعتبر است.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'خطا در اتصال به شبکه. لطفاً اینترنت خود را بررسی کنید.';
+                        break;
+                    default:
+                        console.log(`Unhandled Firebase signup error: ${err.code}`);
+                        break;
+                }
+            } else if (err && err.message) {
+                 errorMessage = `خطای ثبت‌نام: ${err.message}`;
             }
+            
+            setError(errorMessage);
         }
     };
 
