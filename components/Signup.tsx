@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { UserIcon, MailIcon, LockIcon, PhoneIcon } from './icons';
-import { auth, db } from '../services/firebase';
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { supabase } from '../services/supabase';
 
 interface SignupProps {
     onSwitchToLogin: () => void;
@@ -28,52 +26,44 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
         }
 
         try {
-            // Step 1: Create user in Firebase Auth
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-
-            // Step 2: Save additional user info in Firestore.
-            // If this fails, the main App component will handle the missing profile data gracefully on login.
-            setDoc(doc(db, "users", user.uid), {
-                firstName,
-                lastName,
-                mobile,
+            // Step 1: Create user in Supabase Auth
+            const { data, error: signUpError } = await supabase.auth.signUp({
                 email,
-            }).catch((firestoreError: any) => {
-                // Log the error for debugging, but don't block the user flow.
-                console.error("Non-critical error: Failed to create user document in Firestore during signup:", { code: firestoreError.code, message: firestoreError.message });
+                password,
             });
+
+            if (signUpError) throw signUpError;
+            if (!data.user) throw new Error("User not created successfully.");
+
+            // Step 2: Save additional user info in the `profiles` table.
+            const { error: insertError } = await supabase
+                .from('profiles')
+                .insert({
+                    id: data.user.id,
+                    first_name: firstName,
+                    last_name: lastName,
+                    mobile: mobile,
+                });
+
+            if (insertError) {
+                 // Log the error for debugging, but don't block the user flow.
+                console.error("Non-critical error: Failed to create user profile in Supabase during signup:", insertError.message);
+            }
             
             setSuccess('ثبت‌نام با موفقیت انجام شد! به زودی وارد خواهید شد.');
             // onAuthStateChanged in App.tsx will handle the UI transition.
 
         } catch (err: any) {
-            console.error('Signup Error:', { code: err.code, message: err.message });
-            let errorMessage = 'خطایی در فرآیند ثبت‌نام رخ داد. لطفاً دوباره تلاش کنید.'; // Default message
-
-            if (err && err.code) {
-                switch (err.code) {
-                    case 'auth/email-already-in-use':
-                        errorMessage = 'کاربری با این ایمیل قبلاً ثبت‌نام کرده است.';
-                        break;
-                    case 'auth/weak-password':
-                        errorMessage = 'رمز عبور باید حداقل ۶ کاراکتر باشد.';
-                        break;
-                    case 'auth/invalid-email':
-                        errorMessage = 'فرمت ایمیل وارد شده نامعتبر است.';
-                        break;
-                    case 'auth/network-request-failed':
-                        errorMessage = 'خطا در اتصال به شبکه. لطفاً اینترنت خود را بررسی کنید.';
-                        break;
-                    default:
-                        console.log(`Unhandled Firebase signup error: ${err.code}`);
-                        break;
-                }
-            } else if (err && err.message) {
-                 errorMessage = `خطای ثبت‌نام: ${err.message}`;
+            console.error('Signup Error:', err.message);
+            if (err.message.includes('User already registered')) {
+                setError('کاربری با این ایمیل قبلاً ثبت‌نام کرده است.');
+            } else if (err.message.includes('Password should be at least 6 characters')) {
+                setError('رمز عبور باید حداقل ۶ کاراکتر باشد.');
+            } else if (err.message.includes('Unable to validate email address')) {
+                setError('فرمت ایمیل وارد شده نامعتبر است.');
+            } else {
+                setError('خطایی در فرآیند ثبت‌نام رخ داد. لطفاً دوباره تلاش کنید.');
             }
-            
-            setError(errorMessage);
         }
     };
 

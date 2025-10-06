@@ -44,7 +44,7 @@ export interface Salon {
 }
 
 export interface User {
-  uid: string;
+  id: string;
   firstName: string;
   lastName: string;
   mobile: string;

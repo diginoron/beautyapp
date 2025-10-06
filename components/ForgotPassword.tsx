@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { MailIcon } from './icons';
-import { auth } from '../services/firebase';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import { supabase } from '../services/supabase';
 
 interface ForgotPasswordProps {
     onSwitchToLogin: () => void;
@@ -23,18 +22,22 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onSwitchToLogin }) => {
         }
         
         try {
-            await sendPasswordResetEmail(auth, email);
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.href.replace(/#.*$/, ''), // Redirect back to the app's base URL
+            });
+            if (error) throw error;
+
             setMessage('اگر حسابی با این ایمیل وجود داشته باشد، لینک بازنشانی رمز عبور برایتان ارسال شد. لطفاً پوشه اسپم را نیز بررسی کنید.');
             setTimeout(() => {
                 onSwitchToLogin();
-            }, 3000);
+            }, 4000);
         } catch (err: any) {
-            console.error("Password reset error:", String(err));
-             // For security, don't reveal if the user exists or not
+            console.error("Password reset error:", err.message);
+            // For security, show the same message whether the user exists or not.
             setMessage('اگر حسابی با این ایمیل وجود داشته باشد، لینک بازنشانی رمز عبور برایتان ارسال شد. لطفاً پوشه اسپم را نیز بررسی کنید.');
              setTimeout(() => {
                 onSwitchToLogin();
-            }, 3000);
+            }, 4000);
         }
     };
 

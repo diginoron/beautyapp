@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { MailIcon, LockIcon } from './icons';
-import { auth } from '../services/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { supabase } from '../services/supabase';
 
 interface LoginProps {
     onSwitchToSignup: () => void;
@@ -23,33 +22,23 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToForgotPasswor
         }
 
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (error) throw error;
+            
             // onAuthStateChanged in App.tsx will handle successful login
         } catch (err: any) {
-            console.error('Login Error:', { code: err.code, message: err.message });
-            let errorMessage = 'خطایی در فرآیند ورود رخ داد. لطفاً دوباره تلاش کنید.'; // Default message
-            
-            if (err && err.code) {
-                switch (err.code) {
-                    case 'auth/user-not-found':
-                    case 'auth/wrong-password':
-                    case 'auth/invalid-credential':
-                        errorMessage = 'ایمیل یا رمز عبور نامعتبر است.';
-                        break;
-                    case 'auth/network-request-failed':
-                        errorMessage = 'خطا در اتصال به شبکه. لطفاً اینترنت خود را بررسی کنید.';
-                        break;
-                    default:
-                        // For other Firebase errors, show a generic message but log the specific code.
-                        console.log(`Unhandled Firebase auth error: ${err.code}`);
-                        break; // Keep the default message
-                }
-            } else if (err && err.message) {
-                 // For non-Firebase errors that have a message property
-                 errorMessage = `خطای ورود: ${err.message}`;
+            console.error('Login Error:', err.message);
+            if (err.message.includes('Invalid login credentials')) {
+                 setError('ایمیل یا رمز عبور نامعتبر است.');
+            } else if (err.message.includes('Failed to fetch')) {
+                 setError('خطا در اتصال به شبکه. اگر در ایران هستید، ممکن است برای اتصال نیاز به ابزار تغییر IP داشته باشید.');
+            } else {
+                 setError('خطایی در فرآیند ورود رخ داد. لطفاً دوباره تلاش کنید.');
             }
-
-            setError(errorMessage);
         }
     };
 

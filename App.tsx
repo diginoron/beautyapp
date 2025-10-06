@@ -14,9 +14,8 @@ import ColorHarmonyFlow from './components/ColorHarmonyFlow';
 import SalonFinderFlow from './components/SalonFinderFlow';
 import Menu from './components/Menu';
 import AuthFlow from './components/AuthFlow';
-import { auth, db } from './services/firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { supabase } from './services/supabase';
+
 
 const App: React.FC = () => {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -25,29 +24,72 @@ const App: React.FC = () => {
     const [connectionError, setConnectionError] = useState<string | null>(null);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
+        setAuthLoading(true);
+
+        // Check for an existing session on initial load
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
+            if (session) {
                 setIsLoggedIn(true);
-                setConnectionError(null); // Clear previous errors on auth change
                 try {
-                    // User is signed in, fetch profile data from Firestore
-                    const userDocRef = doc(db, 'users', user.uid);
-                    const userDocSnap = await getDoc(userDocRef);
-                    if (userDocSnap.exists()) {
-                        setCurrentUser({ uid: user.uid, ...userDocSnap.data() } as User);
+                    const { data: profileData, error } = await supabase
+                        .from('profiles')
+                        .select('first_name, last_name, mobile')
+                        .eq('id', session.user.id)
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    if (profileData) {
+                        setCurrentUser({
+                            id: session.user.id,
+                            email: session.user.email!,
+                            firstName: profileData.first_name,
+                            lastName: profileData.last_name,
+                            mobile: profileData.mobile
+                        });
                     } else {
-                        // Fallback if firestore doc doesn't exist, e.g., right after signup before doc is created
-                        console.warn("User document not found in Firestore!");
-                        setCurrentUser({ uid: user.uid, email: user.email!, firstName: 'کاربر', lastName: '', mobile: '' });
+                        console.warn("User profile not found in Supabase!");
+                        setCurrentUser({ id: session.user.id, email: session.user.email!, firstName: 'کاربر', lastName: '', mobile: '' });
                     }
-                } catch (firestoreError: any) {
-                    console.error("Firestore connection error on getting user profile:", { code: firestoreError.code, message: firestoreError.message });
-                    // As requested, the user-facing error message for connection issues is removed.
-                    // The app will proceed with a fallback user object to avoid crashing.
-                    setCurrentUser({ uid: user.uid, email: user.email!, firstName: 'کاربر', lastName: '', mobile: '' });
+                } catch (profileError: any) {
+                    console.error("Supabase profile fetch error:", profileError.message);
+                    setCurrentUser({ id: session.user.id, email: session.user.email!, firstName: 'کاربر', lastName: '', mobile: '' });
+                }
+            }
+            setAuthLoading(false);
+        });
+
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session && session.user) {
+                setIsLoggedIn(true);
+                setConnectionError(null);
+                 try {
+                    const { data: profileData, error } = await supabase
+                        .from('profiles')
+                        .select('first_name, last_name, mobile')
+                        .eq('id', session.user.id)
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    if (profileData) {
+                         setCurrentUser({
+                            id: session.user.id,
+                            email: session.user.email!,
+                            firstName: profileData.first_name,
+                            lastName: profileData.last_name,
+                            mobile: profileData.mobile
+                        });
+                    } else {
+                         console.warn("User profile not found in Supabase!");
+                         setCurrentUser({ id: session.user.id, email: session.user.email!, firstName: 'کاربر', lastName: '', mobile: '' });
+                    }
+                } catch (profileError: any) {
+                    console.error("Supabase connection error on getting user profile:", profileError.message);
+                    setCurrentUser({ id: session.user.id, email: session.user.email!, firstName: 'کاربر', lastName: '', mobile: '' });
                 }
             } else {
-                // User is signed out
                 setCurrentUser(null);
                 setIsLoggedIn(false);
             }
@@ -55,7 +97,7 @@ const App: React.FC = () => {
         });
 
         // Cleanup subscription on unmount
-        return () => unsubscribe();
+        return () => subscription.unsubscribe();
     }, []);
 
     const [mode, setMode] = useState<'initial' | 'single' | 'compare' | 'morph' | 'color' | 'salonFinder'>('initial');
@@ -72,12 +114,13 @@ const App: React.FC = () => {
 
     const handleLogout = async () => {
         try {
-            await signOut(auth);
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
             // State updates are handled by the onAuthStateChanged listener
             setIsMenuOpen(false);
             handleReset();
         } catch (error: any) {
-            console.error("Error signing out: ", { code: error.code, message: error.message });
+            console.error("Error signing out: ", error.message);
             setError('خطا در خروج از حساب کاربری.');
         }
     };
