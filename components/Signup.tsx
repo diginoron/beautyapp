@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserIcon, MailIcon, LockIcon, PhoneIcon } from './icons';
 import { supabase } from '../services/supabase';
+import Spinner from './Spinner';
 
 interface SignupProps {
     onSwitchToLogin: () => void;
@@ -13,45 +14,40 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        setSuccess('');
-
+        
         if (!firstName || !lastName || !mobile || !email || !password) {
             setError('لطفاً تمام فیلدها را پر کنید.');
             return;
         }
+        
+        setLoading(true);
 
         try {
-            // Step 1: Create user in Supabase Auth
-            const { data, error: signUpError } = await supabase.auth.signUp({
+            // The sign-up process now only handles authentication.
+            // A database trigger in Supabase is expected to automatically create
+            // a corresponding row in the public.profiles table.
+            // The 'data' option is used to store metadata that the trigger can use.
+            const { error: signUpError } = await supabase.auth.signUp({
                 email,
                 password,
+                options: {
+                    data: {
+                        first_name: firstName,
+                        last_name: lastName,
+                        mobile: mobile,
+                    }
+                }
             });
 
             if (signUpError) throw signUpError;
-            if (!data.user) throw new Error("User not created successfully.");
-
-            // Step 2: Save additional user info in the `profiles` table.
-            const { error: insertError } = await supabase
-                .from('profiles')
-                .insert({
-                    id: data.user.id,
-                    first_name: firstName,
-                    last_name: lastName,
-                    mobile: mobile,
-                });
-
-            if (insertError) {
-                 // Log the error for debugging, but don't block the user flow.
-                console.error("Non-critical error: Failed to create user profile in Supabase during signup:", insertError.message);
-            }
             
-            setSuccess('ثبت‌نام با موفقیت انجام شد! به زودی وارد خواهید شد.');
-            // onAuthStateChanged in App.tsx will handle the UI transition.
+            // onAuthStateChanged in App.tsx will now handle the successful login 
+            // and UI transition automatically. The component will unmount.
 
         } catch (err: any) {
             console.error('Signup Error:', err.message);
@@ -64,6 +60,8 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
             } else {
                 setError('خطایی در فرآیند ثبت‌نام رخ داد. لطفاً دوباره تلاش کنید.');
             }
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -72,7 +70,6 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
             <h2 className="text-2xl font-semibold text-center text-slate-800 mb-6">ایجاد حساب کاربری</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
                 {error && <p className="text-red-500 text-sm text-center bg-red-100 p-2 rounded-md">{error}</p>}
-                {success && <p className="text-green-600 text-sm text-center bg-green-100 p-2 rounded-md">{success}</p>}
 
                 <div className="flex gap-3">
                     <div className="relative w-1/2">
@@ -102,10 +99,10 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
                 
                 <button
                     type="submit"
-                    disabled={!!success}
-                    className="w-full px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed"
+                    disabled={loading}
+                    className="w-full h-[46px] flex items-center justify-center px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:scale-100"
                 >
-                    ثبت‌نام
+                    {loading ? <Spinner /> : 'ثبت‌نام'}
                 </button>
             </form>
             <p className="text-center text-sm text-slate-600 mt-6">

@@ -14,10 +14,12 @@ import ColorHarmonyFlow from './components/ColorHarmonyFlow';
 import SalonFinderFlow from './components/SalonFinderFlow';
 import Menu from './components/Menu';
 import AuthFlow from './components/AuthFlow';
+import SplashScreen from './components/SplashScreen';
 import { supabase } from './services/supabase';
 
 
 const App: React.FC = () => {
+    const [showSplash, setShowSplash] = useState<boolean>(true);
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState<boolean>(true);
@@ -193,6 +195,10 @@ const App: React.FC = () => {
         setIsMenuOpen(!isMenuOpen);
     }
     
+    if (showSplash) {
+        return <SplashScreen onEnter={() => setShowSplash(false)} />;
+    }
+
     if (authLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50">

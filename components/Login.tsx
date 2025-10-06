@@ -32,7 +32,9 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToForgotPasswor
             // onAuthStateChanged in App.tsx will handle successful login
         } catch (err: any) {
             console.error('Login Error:', err.message);
-            if (err.message.includes('Invalid login credentials')) {
+            if (err.message.includes('Email not confirmed')) {
+                 setError('ایمیل شما هنوز تایید نشده است. لطفاً لینک فعال‌سازی ارسال شده به ایمیل خود را چک کنید (پوشه اسپم را نیز بررسی کنید).');
+            } else if (err.message.includes('Invalid login credentials')) {
                  setError('ایمیل یا رمز عبور نامعتبر است.');
             } else if (err.message.includes('Failed to fetch')) {
                  setError('خطا در اتصال به شبکه. اگر در ایران هستید، ممکن است برای اتصال نیاز به ابزار تغییر IP داشته باشید.');
