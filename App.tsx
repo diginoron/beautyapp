@@ -137,8 +137,12 @@ const App: React.FC = () => {
                 setError(result.errorMessage || 'چهره‌ای در تصویر شناسایی نشد یا تصویر نامعتبر است.');
             }
         } catch (err) {
-            console.error("Analysis Error:", String(err));
-            setError('خطایی در هنگام تحلیل تصویر رخ داد. لطفاً دوباره تلاش کنید.');
+            console.error("Analysis Error:", err);
+            if (err instanceof Error) {
+                setError(err.message); // Display the specific error message from the service
+            } else {
+                setError('خطایی ناشناخته در هنگام تحلیل تصویر رخ داد. لطفاً دوباره تلاش کنید.');
+            }
         } finally {
             setIsLoading(false);
         }

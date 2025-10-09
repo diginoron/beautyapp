@@ -1,17 +1,21 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import type { AnalysisResult, MorphResult, ColorHarmonyResult, Salon } from '../types';
 
-// Per the coding guidelines, the API key must be accessed via process.env.API_KEY.
-// The execution environment is expected to provide this variable, even in a client-side context.
 const getAiClient = () => {
-    // The 'process' object is polyfilled by the execution environment to provide access to secrets.
+    // This function now throws specific errors if the environment is not set up correctly.
+    if (typeof process === 'undefined' || typeof process.env === 'undefined') {
+        console.error("CRITICAL: 'process.env' is not defined. The execution environment is not providing secrets as expected.");
+        throw new Error("خطای محیطی: متغیرهای لازم برای اتصال به سرویس هوش مصنوعی در دسترس نیستند.");
+    }
+    
     const apiKey = process.env.API_KEY;
     if (!apiKey) {
-        console.error("Gemini API key is missing. Please ensure the 'API_KEY' environment variable is correctly set in your project's deployment settings.");
-        return null;
+        console.error("CRITICAL: Gemini API key is missing. 'process.env.API_KEY' is empty or not set. Please ensure the 'API_KEY' environment variable is correctly configured in your project's deployment settings and that the project has been redeployed.");
+        throw new Error("کلید API یافت نشد. لطفاً از تنظیم بودن متغیر 'API_KEY' در تنظیمات پروژه خود و انتشار مجدد برنامه اطمینان حاصل کنید.");
     }
-    return new GoogleGenAI({ apiKey: apiKey });
+    return new GoogleGenAI({ apiKey });
 };
+
 
 const analysisSchema = {
     type: Type.OBJECT,
@@ -167,9 +171,6 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
 
     try {
         const ai = getAiClient();
-        if (!ai) {
-             throw new Error("AI client could not be initialized. Check API key in deployment environment variables (API_KEY).");
-        }
         const imagePart = {
             inlineData: {
                 mimeType: 'image/jpeg',
@@ -195,8 +196,11 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
         const result = JSON.parse(jsonString);
         return result as AnalysisResult;
     } catch (error) {
-        console.error("Error calling Gemini API:", String(error));
-        throw new Error("Failed to get analysis from the AI service.");
+        console.error("Error in analyzeImage:", error);
+        if (error instanceof Error && (error.message.startsWith('کلید API یافت نشد') || error.message.startsWith('خطای محیطی'))) {
+             throw error; // Re-throw our specific, user-facing error
+        }
+        throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
     }
 };
 
@@ -224,9 +228,6 @@ export const getMorphSuggestions = async (sourceImageBase64: string, targetImage
     
     try {
         const ai = getAiClient();
-        if (!ai) {
-             throw new Error("AI client could not be initialized. Check API key.");
-        }
         const sourceImagePart = { inlineData: { mimeType: 'image/jpeg', data: sourceImageBase64 } };
         const targetImagePart = { inlineData: { mimeType: 'image/jpeg', data: targetImageBase64 } };
         const textPart = { text: prompt };
@@ -246,8 +247,11 @@ export const getMorphSuggestions = async (sourceImageBase64: string, targetImage
         return result as MorphResult;
 
     } catch (error) {
-        console.error("Error calling Gemini API for morph suggestions:", String(error));
-        throw new Error("Failed to get morph suggestions from the AI service.");
+        console.error("Error in getMorphSuggestions:", error);
+        if (error instanceof Error && (error.message.startsWith('کلید API یافت نشد') || error.message.startsWith('خطای محیطی'))) {
+             throw error;
+        }
+        throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
     }
 };
 
@@ -268,9 +272,6 @@ export const getColorHarmonySuggestions = async (base64Image: string): Promise<C
 
     try {
         const ai = getAiClient();
-        if (!ai) {
-             throw new Error("AI client could not be initialized. Check API key.");
-        }
         const imagePart = { inlineData: { mimeType: 'image/jpeg', data: base64Image } };
         const textPart = { text: prompt };
 
@@ -288,8 +289,11 @@ export const getColorHarmonySuggestions = async (base64Image: string): Promise<C
         const result = JSON.parse(jsonString);
         return result as ColorHarmonyResult;
     } catch (error) {
-        console.error("Error calling Gemini API for color harmony:", String(error));
-        throw new Error("Failed to get color harmony suggestions from the AI service.");
+        console.error("Error in getColorHarmonySuggestions:", error);
+        if (error instanceof Error && (error.message.startsWith('کلید API یافت نشد') || error.message.startsWith('خطای محیطی'))) {
+             throw error;
+        }
+        throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
     }
 };
 
@@ -309,9 +313,6 @@ export const findNearbySalons = async (locationQuery: string): Promise<Salon[]> 
 
     try {
         const ai = getAiClient();
-        if (!ai) {
-             throw new Error("AI client could not be initialized. Check API key.");
-        }
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
@@ -328,7 +329,10 @@ export const findNearbySalons = async (locationQuery: string): Promise<Salon[]> 
         result.sort((a: Salon, b: Salon) => b.rating - a.rating);
         return result as Salon[];
     } catch (error) {
-        console.error("Error calling Gemini API for salon search:", String(error));
-        throw new Error("Failed to find salons from the AI service.");
+        console.error("Error in findNearbySalons:", error);
+        if (error instanceof Error && (error.message.startsWith('کلید API یافت نشد') || error.message.startsWith('خطای محیطی'))) {
+             throw error;
+        }
+        throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
     }
 };
