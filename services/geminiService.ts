@@ -1,17 +1,19 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import type { AnalysisResult, MorphResult, ColorHarmonyResult, Salon } from '../types';
 
+// A single, clear error message for any configuration issue.
+const CONFIGURATION_ERROR_MESSAGE = "خطای پیکربندی: کلید API برای سرویس هوش مصنوعی به درستی تنظیم نشده است. لطفاً تنظیمات پروژه را بررسی کنید.";
+
+
 const getAiClient = () => {
-    // This function now throws specific errors if the environment is not set up correctly.
-    if (typeof process === 'undefined' || typeof process.env === 'undefined') {
-        console.error("CRITICAL: 'process.env' is not defined. The execution environment is not providing secrets as expected.");
-        throw new Error("خطای محیطی: متغیرهای لازم برای اتصال به سرویس هوش مصنوعی در دسترس نیستند.");
-    }
-    
+    // This line assumes the execution platform will replace `process.env.API_KEY` with the secret.
+    // It will throw a ReferenceError if the `process` object is not defined and not replaced by the platform.
     const apiKey = process.env.API_KEY;
+
     if (!apiKey) {
-        console.error("CRITICAL: Gemini API key is missing. 'process.env.API_KEY' is empty or not set. Please ensure the 'API_KEY' environment variable is correctly configured in your project's deployment settings and that the project has been redeployed.");
-        throw new Error("کلید API یافت نشد. لطفاً از تنظیم بودن متغیر 'API_KEY' در تنظیمات پروژه خود و انتشار مجدد برنامه اطمینان حاصل کنید.");
+        console.error("CRITICAL: Gemini API key is missing or empty after platform substitution.");
+        // We throw a generic Error that will be caught and re-thrown with a user-friendly message.
+        throw new Error("API key is missing.");
     }
     return new GoogleGenAI({ apiKey });
 };
@@ -197,8 +199,8 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
         return result as AnalysisResult;
     } catch (error) {
         console.error("Error in analyzeImage:", error);
-        if (error instanceof Error && (error.message.startsWith('کلید API یافت نشد') || error.message.startsWith('خطای محیطی'))) {
-             throw error; // Re-throw our specific, user-facing error
+        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is missing.")) {
+            throw new Error(CONFIGURATION_ERROR_MESSAGE);
         }
         throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
     }
@@ -248,8 +250,8 @@ export const getMorphSuggestions = async (sourceImageBase64: string, targetImage
 
     } catch (error) {
         console.error("Error in getMorphSuggestions:", error);
-        if (error instanceof Error && (error.message.startsWith('کلید API یافت نشد') || error.message.startsWith('خطای محیطی'))) {
-             throw error;
+        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is missing.")) {
+            throw new Error(CONFIGURATION_ERROR_MESSAGE);
         }
         throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
     }
@@ -290,8 +292,8 @@ export const getColorHarmonySuggestions = async (base64Image: string): Promise<C
         return result as ColorHarmonyResult;
     } catch (error) {
         console.error("Error in getColorHarmonySuggestions:", error);
-        if (error instanceof Error && (error.message.startsWith('کلید API یافت نشد') || error.message.startsWith('خطای محیطی'))) {
-             throw error;
+        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is missing.")) {
+            throw new Error(CONFIGURATION_ERROR_MESSAGE);
         }
         throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
     }
@@ -330,8 +332,8 @@ export const findNearbySalons = async (locationQuery: string): Promise<Salon[]> 
         return result as Salon[];
     } catch (error) {
         console.error("Error in findNearbySalons:", error);
-        if (error instanceof Error && (error.message.startsWith('کلید API یافت نشد') || error.message.startsWith('خطای محیطی'))) {
-             throw error;
+        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is missing.")) {
+            throw new Error(CONFIGURATION_ERROR_MESSAGE);
         }
         throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
     }
