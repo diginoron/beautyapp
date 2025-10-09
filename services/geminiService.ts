@@ -1,15 +1,16 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import type { AnalysisResult, MorphResult, ColorHarmonyResult, Salon } from '../types';
 
-// Fix: Use process.env.API_KEY as per the coding guidelines. This resolves the TypeScript error
-// regarding `import.meta.env` and aligns the code with the mandatory API key handling instructions.
+// Per the coding guidelines, the API key must be accessed via process.env.API_KEY.
+// The execution environment is expected to provide this variable, even in a client-side context.
 const getAiClient = () => {
-    if (!process.env.API_KEY) {
-        console.error("Gemini API key is missing. Please set the API_KEY environment variable.");
-        // We don't throw an error here to prevent the app from crashing.
-        // The subsequent API call will fail, which is handled in each function.
+    // The 'process' object is polyfilled by the execution environment to provide access to secrets.
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+        console.error("Gemini API key is missing. Please ensure the 'API_KEY' environment variable is correctly set in your project's deployment settings.");
+        return null;
     }
-    return new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    return new GoogleGenAI({ apiKey: apiKey });
 };
 
 const analysisSchema = {
@@ -166,6 +167,9 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
 
     try {
         const ai = getAiClient();
+        if (!ai) {
+             throw new Error("AI client could not be initialized. Check API key in deployment environment variables (API_KEY).");
+        }
         const imagePart = {
             inlineData: {
                 mimeType: 'image/jpeg',
@@ -220,6 +224,9 @@ export const getMorphSuggestions = async (sourceImageBase64: string, targetImage
     
     try {
         const ai = getAiClient();
+        if (!ai) {
+             throw new Error("AI client could not be initialized. Check API key.");
+        }
         const sourceImagePart = { inlineData: { mimeType: 'image/jpeg', data: sourceImageBase64 } };
         const targetImagePart = { inlineData: { mimeType: 'image/jpeg', data: targetImageBase64 } };
         const textPart = { text: prompt };
@@ -261,6 +268,9 @@ export const getColorHarmonySuggestions = async (base64Image: string): Promise<C
 
     try {
         const ai = getAiClient();
+        if (!ai) {
+             throw new Error("AI client could not be initialized. Check API key.");
+        }
         const imagePart = { inlineData: { mimeType: 'image/jpeg', data: base64Image } };
         const textPart = { text: prompt };
 
@@ -299,6 +309,9 @@ export const findNearbySalons = async (locationQuery: string): Promise<Salon[]> 
 
     try {
         const ai = getAiClient();
+        if (!ai) {
+             throw new Error("AI client could not be initialized. Check API key.");
+        }
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
