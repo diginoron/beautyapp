@@ -1,10 +1,14 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import type { AnalysisResult, MorphResult, ColorHarmonyResult, Salon } from '../types';
 
+// Fix: Use process.env.API_KEY as per the coding guidelines. This resolves the TypeScript error
+// regarding `import.meta.env` and aligns the code with the mandatory API key handling instructions.
 const getAiClient = () => {
-    // The user should set the API_KEY in the environment variables.
-    // If it's not set, the API calls will fail, which is handled in each service function.
-    // Throwing an error here would crash the app on startup.
+    if (!process.env.API_KEY) {
+        console.error("Gemini API key is missing. Please set the API_KEY environment variable.");
+        // We don't throw an error here to prevent the app from crashing.
+        // The subsequent API call will fail, which is handled in each function.
+    }
     return new GoogleGenAI({ apiKey: process.env.API_KEY! });
 };
 

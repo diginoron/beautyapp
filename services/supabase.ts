@@ -18,18 +18,6 @@ const supabaseUrl = "https://rgstkjzexetemzcixrxr.supabase.co"; // <-- آدرس 
 const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnc3RranpleGV0ZW16Y2l4cnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3NzgzNjksImV4cCI6MjA3NTM1NDM2OX0.Lod8RSMKz68WHsSGXaqkaCOdbo9nNJ3Tbu5ggAbKxPk"; // <-- کلید عمومی (anon) خود را اینجا قرار دهید
 
 
-if (supabaseUrl === "YOUR_SUPABASE_URL" || supabaseAnonKey === "YOUR_SUPABASE_ANON_KEY") {
-    const warningMessage = `
-    ===============================================================
-     هشدار: اطلاعات اتصال به Supabase تنظیم نشده است. 
-    ===============================================================
-    برای فعال‌سازی قابلیت‌های ورود، ثبت‌نام و ذخیره سابقه،
-    لطفاً فایل 'services/supabase.ts' را باز کرده و مقادیر
-    'supabaseUrl' و 'supabaseAnonKey' را با اطلاعات پروژه
-    Supabase خود جایگزین کنید.
-    ===============================================================
-    `;
-    console.warn(warningMessage);
-}
-
+// Fix: Removed the conditional check for placeholder credentials. The credentials have been
+// provided, making the check obsolete and causing a TypeScript error due to non-overlapping types.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
