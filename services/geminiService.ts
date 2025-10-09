@@ -1,19 +1,22 @@
+
 import { GoogleGenAI, Type } from '@google/genai';
 import type { AnalysisResult, MorphResult, ColorHarmonyResult, Salon } from '../types';
 
 // A single, clear error message for any configuration issue.
-const CONFIGURATION_ERROR_MESSAGE = "خطای پیکربندی: کلید API برای سرویس هوش مصنوعی به درستی تنظیم نشده است. لطفاً تنظیمات پروژه را بررسی کنید.";
+const CONFIGURATION_ERROR_MESSAGE = "خطای پیکربی: کلید API برای سرویس هوش مصنوعی به درستی تنظیم نشده است. لطفاً تنظیمات پروژه را بررسی کنید.";
 
 
 const getAiClient = () => {
-    // This line assumes the execution platform will replace `process.env.API_KEY` with the secret.
+    // This line assumes the execution platform will replace `process.env.GEMINI_API_KEY` with the secret.
     // It will throw a ReferenceError if the `process` object is not defined and not replaced by the platform.
-    const apiKey = process.env.API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
 
-    if (!apiKey) {
-        console.error("CRITICAL: Gemini API key is missing or empty after platform substitution.");
+    // Enhanced check: Ensure the key exists AND looks like a valid Google AI key.
+    // This helps catch scenarios where the wrong environment variable is being inherited.
+    if (!apiKey || !apiKey.startsWith('AIza')) {
+        console.error("CRITICAL: Gemini API key is missing, empty, or has an invalid format after platform substitution.");
         // We throw a generic Error that will be caught and re-thrown with a user-friendly message.
-        throw new Error("API key is missing.");
+        throw new Error("API key is invalid or missing.");
     }
     return new GoogleGenAI({ apiKey });
 };
@@ -199,7 +202,7 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
         return result as AnalysisResult;
     } catch (error) {
         console.error("Error in analyzeImage:", error);
-        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is missing.")) {
+        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is invalid or missing.")) {
             throw new Error(CONFIGURATION_ERROR_MESSAGE);
         }
         throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
@@ -250,7 +253,7 @@ export const getMorphSuggestions = async (sourceImageBase64: string, targetImage
 
     } catch (error) {
         console.error("Error in getMorphSuggestions:", error);
-        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is missing.")) {
+        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is invalid or missing.")) {
             throw new Error(CONFIGURATION_ERROR_MESSAGE);
         }
         throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
@@ -292,7 +295,7 @@ export const getColorHarmonySuggestions = async (base64Image: string): Promise<C
         return result as ColorHarmonyResult;
     } catch (error) {
         console.error("Error in getColorHarmonySuggestions:", error);
-        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is missing.")) {
+        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is invalid or missing.")) {
             throw new Error(CONFIGURATION_ERROR_MESSAGE);
         }
         throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
@@ -332,7 +335,7 @@ export const findNearbySalons = async (locationQuery: string): Promise<Salon[]> 
         return result as Salon[];
     } catch (error) {
         console.error("Error in findNearbySalons:", error);
-        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is missing.")) {
+        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is invalid or missing.")) {
             throw new Error(CONFIGURATION_ERROR_MESSAGE);
         }
         throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");

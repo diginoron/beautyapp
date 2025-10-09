@@ -1,23 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 
-// =================================================================
-// !! اقدام فوری: لطفاً اطلاعات Supabase خود را وارد کنید !!
+// ====================================================================================
+// ====================================================================================
+// !! خطای "Failed to fetch" به دلیل تنظیم نبودن این فایل است !!
 //
-// این برنامه برای ذخیره اطلاعات کاربران و سابقه تحلیل‌ها از Supabase استفاده می‌کند.
-// برای اینکه برنامه به درستی کار کند، باید اطلاعات اتصال پروژه Supabase خود را در اینجا وارد کنید.
+// اگر در هنگام ورود یا ثبت‌نام با خطای "Failed to fetch" یا "خطا در اتصال به شبکه"
+// مواجه می‌شوید، دلیل آن این است که مقادیر زیر با اطلاعات واقعی پروژه Supabase
+// شما جایگزین نشده‌اند.
 //
-// مراحل:
-// ۱. به داشبورد Supabase خود در app.supabase.com بروید.
-// ۲. اگر پروژه‌ای ندارید، یک پروژه جدید بسازید.
-// ۳. به بخش تنظیمات پروژه (Project Settings) > API بروید.
-// ۴. مقدار "Project URL" را کپی کرده و در متغیر `supabaseUrl` زیر قرار دهید.
-// ۵. مقدار کلید `anon` `public` را از بخش "Project API Keys" کپی کرده و در متغیر `supabaseAnonKey` زیر قرار دهید.
-// =================================================================
+// لطفاً برای حل مشکل، این مراحل را دنبال کنید:
+// ۱. وارد داشبور Supabase خود شوید (app.supabase.com).
+// ۲. به تنظیمات پروژه (آیکن چرخ‌دنده) و سپس بخش "API" بروید.
+// ۳. مقدار "Project URL" را کپی کرده و جایگزین `supabaseUrl` کنید.
+// ۴. کلید `anon` `public` را از بخش "Project API Keys" کپی کرده و جایگزین `supabaseAnonKey` کنید.
+//
+// تا زمانی که این مقادیر نمونه را تغییر ندهید، برنامه به پایگاه داده متصل نخواهد شد.
+// ====================================================================================
+// ====================================================================================
 
-const supabaseUrl = "https://rgstkjzexetemzcixrxr.supabase.co"; // <-- آدرس پروژه Supabase خود را اینجا قرار دهید
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnc3RranpleGV0ZW16Y2l4cnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3NzgzNjksImV4cCI6MjA3NTM1NDM2OX0.Lod8RSMKz68WHsSGXaqkaCOdbo9nNJ3Tbu5ggAbKxPk"; // <-- کلید عمومی (anon) خود را اینجا قرار دهید
+export const supabaseUrl = "https://rgstkjzexetemzcixrxr.supabase.co"; // <-- آدرس واقعی پروژه Supabase خود را اینجا قرار دهید
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnc3RranpleGV0ZW16Y2l4cnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3NzgzNjksImV4cCI6MjA3NTM1NDM2OX0.Lod8RSMKz68WHsSGXaqkaCOdbo9nNJ3Tbu5ggAbKxPk"; // <-- کلید عمومی (anon) واقعی خود را اینجا قرار دهید
 
 
-// Fix: Removed the conditional check for placeholder credentials. The credentials have been
-// provided, making the check obsolete and causing a TypeScript error due to non-overlapping types.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
