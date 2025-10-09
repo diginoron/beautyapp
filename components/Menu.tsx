@@ -1,14 +1,15 @@
 import React from 'react';
-import { HomeIcon, CloseIcon, LogoutIcon } from './icons';
+import { HomeIcon, CloseIcon, LogoutIcon, HistoryIcon } from './icons';
 
 interface MenuProps {
     isOpen: boolean;
     onClose: () => void;
     onGoHome: () => void;
+    onGoToHistory: () => void;
     onLogout: () => void;
 }
 
-const Menu: React.FC<MenuProps> = ({ isOpen, onClose, onGoHome, onLogout }) => {
+const Menu: React.FC<MenuProps> = ({ isOpen, onClose, onGoHome, onGoToHistory, onLogout }) => {
     return (
         <>
             {/* Overlay */}
@@ -46,6 +47,18 @@ const Menu: React.FC<MenuProps> = ({ isOpen, onClose, onGoHome, onLogout }) => {
                                 >
                                     <HomeIcon className="w-5 h-5 ml-3" />
                                     <span>صفحه نخست</span>
+                                </button>
+                            </li>
+                             <li className="mb-4">
+                                <button
+                                    onClick={() => {
+                                        onGoToHistory();
+                                        onClose();
+                                    }}
+                                    className="w-full flex items-center p-2 text-slate-700 rounded-md hover:bg-slate-100 transition-colors"
+                                >
+                                    <HistoryIcon className="w-5 h-5 ml-3" />
+                                    <span>سابقه تحلیل‌ها</span>
                                 </button>
                             </li>
                         </ul>

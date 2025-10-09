@@ -6,7 +6,7 @@ interface SplashScreenProps {
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onEnter }) => {
     // آدرس تصویر پس‌زمینه با یک تصویر زیباتر جایگزین شد
-    const backgroundImageUrl = 'https://images.pexels.com/photos/247204/pexels-photo-247204.jpeg';
+    const backgroundImageUrl = 'http://diginoron.com/wp-content/uploads/2025/10/pexels-photo-247204-scaled.jpeg';
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center text-white animate-fade-in relative overflow-hidden">

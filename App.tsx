@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import type { AnalysisResult, User } from './types';
 import { analyzeImage } from './services/geminiService';
+import { saveAnalysis } from './services/historyService';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ImageUploader from './components/ImageUploader';
@@ -12,6 +14,7 @@ import ComparisonFlow from './components/ComparisonFlow';
 import MorphFlow from './components/MorphFlow';
 import ColorHarmonyFlow from './components/ColorHarmonyFlow';
 import SalonFinderFlow from './components/SalonFinderFlow';
+import HistoryFlow from './components/HistoryFlow';
 import Menu from './components/Menu';
 import AuthFlow from './components/AuthFlow';
 import SplashScreen from './components/SplashScreen';
@@ -22,46 +25,11 @@ const App: React.FC = () => {
     const [showSplash, setShowSplash] = useState<boolean>(true);
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [authLoading, setAuthLoading] = useState<boolean>(true);
     const [connectionError, setConnectionError] = useState<string | null>(null);
 
     useEffect(() => {
-        setAuthLoading(true);
-
-        // Check for an existing session on initial load
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
-            if (session) {
-                setIsLoggedIn(true);
-                try {
-                    const { data: profileData, error } = await supabase
-                        .from('profiles')
-                        .select('first_name, last_name, mobile')
-                        .eq('id', session.user.id)
-                        .single();
-                    
-                    if (error) throw error;
-                    
-                    if (profileData) {
-                        setCurrentUser({
-                            id: session.user.id,
-                            email: session.user.email!,
-                            firstName: profileData.first_name,
-                            lastName: profileData.last_name,
-                            mobile: profileData.mobile
-                        });
-                    } else {
-                        console.warn("User profile not found in Supabase!");
-                        setCurrentUser({ id: session.user.id, email: session.user.email!, firstName: 'کاربر', lastName: '', mobile: '' });
-                    }
-                } catch (profileError: any) {
-                    console.error("Supabase profile fetch error:", profileError.message);
-                    setCurrentUser({ id: session.user.id, email: session.user.email!, firstName: 'کاربر', lastName: '', mobile: '' });
-                }
-            }
-            setAuthLoading(false);
-        });
-
-
+        // onAuthStateChange is called on initial load and whenever the auth state changes.
+        // This is the single source of truth for the user's session.
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (session && session.user) {
                 setIsLoggedIn(true);
@@ -95,14 +63,13 @@ const App: React.FC = () => {
                 setCurrentUser(null);
                 setIsLoggedIn(false);
             }
-            setAuthLoading(false);
         });
 
         // Cleanup subscription on unmount
         return () => subscription.unsubscribe();
     }, []);
 
-    const [mode, setMode] = useState<'initial' | 'single' | 'compare' | 'morph' | 'color' | 'salonFinder'>('initial');
+    const [mode, setMode] = useState<'initial' | 'single' | 'compare' | 'morph' | 'color' | 'salonFinder' | 'history'>('initial');
     
     // State for single analysis mode
     const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -161,6 +128,11 @@ const App: React.FC = () => {
             const result = await analyzeImage(imageBase64);
             if(result.isValidFace) {
                  setAnalysis(result);
+                 // Save the analysis to history in the background
+                 if (currentUser?.id && imageBase64) {
+                     saveAnalysis(currentUser.id, result, imageBase64)
+                        .catch(err => console.error("Failed to save analysis to history:", err));
+                 }
             } else {
                 setError(result.errorMessage || 'چهره‌ای در تصویر شناسایی نشد یا تصویر نامعتبر است.');
             }
@@ -170,7 +142,7 @@ const App: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [imageBase64]);
+    }, [imageBase64, currentUser]);
 
     const handleReset = () => {
         setImageBase64(null);
@@ -199,14 +171,6 @@ const App: React.FC = () => {
         return <SplashScreen onEnter={() => setShowSplash(false)} />;
     }
 
-    if (authLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                <Spinner />
-            </div>
-        );
-    }
-
     if (!isLoggedIn) {
         return <AuthFlow />;
     }
@@ -218,6 +182,7 @@ const App: React.FC = () => {
                 isOpen={isMenuOpen}
                 onClose={() => setIsMenuOpen(false)}
                 onGoHome={handleReset}
+                onGoToHistory={() => setMode('history')}
                 onLogout={handleLogout}
             />
             <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center">
@@ -299,6 +264,7 @@ const App: React.FC = () => {
                     {mode === 'morph' && <MorphFlow onBack={handleReset} />}
                     {mode === 'color' && <ColorHarmonyFlow onBack={handleReset} />}
                     {mode === 'salonFinder' && <SalonFinderFlow onBack={handleReset} />}
+                    {mode === 'history' && currentUser && <HistoryFlow onBack={handleReset} currentUser={currentUser} />}
                 </div>
             </main>
             <Footer />

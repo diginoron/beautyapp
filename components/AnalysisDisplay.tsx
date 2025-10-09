@@ -6,7 +6,8 @@ import ShareModal from './ShareModal';
 interface AnalysisDisplayProps {
     result: AnalysisResult;
     imagePreview: string;
-    onReset: () => void;
+    onReset?: () => void;
+    onBack?: () => void;
 }
 
 const ScoreCircle: React.FC<{ score: number }> = ({ score }) => {
@@ -56,7 +57,7 @@ const FeatureCard: React.FC<{ item: FeatureAnalysis }> = ({ item }) => (
 );
 
 
-const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result, imagePreview, onReset }) => {
+const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result, imagePreview, onReset, onBack }) => {
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
     return (
@@ -97,12 +98,22 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result, imagePreview,
                 </div>
 
                 <div className="text-center pt-6 border-t border-slate-200 flex flex-col sm:flex-row justify-center items-center gap-4">
-                    <button
-                        onClick={onReset}
-                        className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105"
-                    >
-                        تحلیل یک چهره دیگر
-                    </button>
+                    {onBack && (
+                         <button
+                            onClick={onBack}
+                            className="w-full sm:w-auto px-8 py-3 bg-slate-600 text-white font-semibold rounded-lg hover:bg-slate-700 transition-all duration-300"
+                        >
+                            بازگشت به سابقه
+                        </button>
+                    )}
+                    {onReset && (
+                        <button
+                            onClick={onReset}
+                            className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105"
+                        >
+                            تحلیل یک چهره دیگر
+                        </button>
+                    )}
                     <button
                         onClick={() => setIsShareModalOpen(true)}
                         className="w-full sm:w-auto flex items-center justify-center px-8 py-3 bg-slate-600 text-white font-semibold rounded-lg hover:bg-slate-700 transition-all duration-300"

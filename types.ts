@@ -50,3 +50,12 @@ export interface User {
   mobile: string;
   email: string;
 }
+
+export interface HistoryItem {
+  id: string;
+  created_at: string;
+  harmony_score: number;
+  feature_analysis: FeatureAnalysis[];
+  suggestions: string[];
+  image_url: string;
+}

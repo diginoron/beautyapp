@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { UserIcon, MailIcon, LockIcon, PhoneIcon } from './icons';
 import { supabase } from '../services/supabase';
@@ -15,10 +16,12 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setSuccessMessage('');
         
         if (!firstName || !lastName || !mobile || !email || !password) {
             setError('لطفاً تمام فیلدها را پر کنید.');
@@ -46,8 +49,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
 
             if (signUpError) throw signUpError;
             
-            // onAuthStateChanged in App.tsx will now handle the successful login 
-            // and UI transition automatically. The component will unmount.
+            setSuccessMessage('ثبت‌نام موفق بود! لطفاً ایمیل خود را برای دریافت لینک فعال‌سازی بررسی کنید (پوشه اسپم را نیز چک کنید).');
 
         } catch (err: any) {
             console.error('Signup Error:', err.message);
@@ -64,6 +66,21 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
             setLoading(false);
         }
     };
+    
+    if (successMessage) {
+        return (
+            <div className="animate-fade-in text-center">
+                 <h2 className="text-2xl font-semibold text-slate-800 mb-4">ثبت‌نام کامل شد!</h2>
+                 <p className="text-green-600 text-sm bg-green-100 p-3 rounded-md">{successMessage}</p>
+                 <p className="text-center text-sm text-slate-600 mt-6">
+                    پس از فعال‌سازی حساب، می‌توانید{' '}
+                    <button onClick={onSwitchToLogin} className="font-semibold text-indigo-600 hover:underline">
+                        وارد شوید
+                    </button>
+                </p>
+            </div>
+        )
+    }
 
     return (
         <div className="animate-fade-in">
