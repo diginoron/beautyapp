@@ -1,6 +1,9 @@
+
 import React, { useState, useRef, useCallback } from 'react';
 import { UploadIcon, CameraIcon } from './icons';
 import CameraCapture from './CameraCapture';
+import { resizeImageFromFile, resizeImageFromDataUrl } from '../services/imageUtils';
+
 
 interface ImageInputProps {
     label: string;
@@ -13,16 +16,16 @@ const ImageInput: React.FC<ImageInputProps> = ({ label, onImageSet }) => {
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFile = (file: File) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const previewUrl = reader.result as string;
-            const base64String = previewUrl.split(',')[1];
-            setPreview(previewUrl);
+    const handleFile = async (file: File) => {
+        try {
+            const { base64, preview } = await resizeImageFromFile(file);
+            setPreview(preview);
             setShowCamera(false);
-            onImageSet(base64String, previewUrl);
-        };
-        reader.readAsDataURL(file);
+            onImageSet(base64, preview);
+        } catch (err) {
+            console.error("Image resizing failed in ImageInput:", err);
+            // Optionally, set an error state here to inform the user
+        }
     };
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,11 +33,16 @@ const ImageInput: React.FC<ImageInputProps> = ({ label, onImageSet }) => {
         if (file) handleFile(file);
     };
 
-    const handleCapture = (dataUrl: string) => {
-        const base64String = dataUrl.split(',')[1];
-        setPreview(dataUrl);
-        setShowCamera(false);
-        onImageSet(base64String, dataUrl);
+    const handleCapture = async (dataUrl: string) => {
+        try {
+            const { base64, preview } = await resizeImageFromDataUrl(dataUrl);
+            setPreview(preview);
+            setShowCamera(false);
+            onImageSet(base64, preview);
+        } catch (err) {
+            console.error("Captured image resizing failed in ImageInput:", err);
+             // Optionally, set an error state here
+        }
     };
 
     const handleReset = () => {
@@ -55,7 +63,7 @@ const ImageInput: React.FC<ImageInputProps> = ({ label, onImageSet }) => {
         if (file && file.type.startsWith('image/')) {
             handleFile(file);
         }
-    }, [handleDragEvent]);
+    }, [handleFile, handleDragEvent]);
 
     if (showCamera) {
         return (

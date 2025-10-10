@@ -1,144 +1,28 @@
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
-// --- Schemas for structured JSON responses ---
-
-const analysisSchema = {
-    type: Type.OBJECT,
-    properties: {
-        isValidFace: {
-            type: Type.BOOLEAN,
-            description: "اگر یک چهره انسانی واضح در تصویر شناسایی شود true، در غیر این صورت false.",
-        },
-        errorMessage: {
-            type: Type.STRING,
-            description: "یک پیام خطا در صورتی که چهره‌ای شناسایی نشود یا تصویر نامناسب باشد. اگر چهره‌ای شناسایی شود، این فیلد null خواهد بود.",
-        },
-        harmonyScore: {
-            type: Type.INTEGER,
-            description: "امتیاز هماهنگی چهره از ۱ تا ۱۰ بر اساس تقارن و تعادل. اگر چهره‌ای شناسایی نشود، این فیلد null خواهد بود.",
-        },
-        featureAnalysis: {
-            type: Type.ARRAY,
-            description: "تحلیل دقیق اجزای مختلف چهره به زبان فارسی.",
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    feature: {
-                        type: Type.STRING,
-                        description: "نام جزء چهره به فارسی (مثلاً: چشم‌ها، بینی، لب‌ها)."
-                    },
-                    analysis: {
-                        type: Type.STRING,
-                        description: "یک تحلیل سازنده و مثبت از آن جزء به زبان فارسی."
-                    },
-                },
-                required: ["feature", "analysis"],
-            },
-        },
-        suggestions: {
-            type: Type.ARRAY,
-            description: "لیستی از پیشنهادات سازنده برای بهبود زیبایی به زبان فارسی.",
-            items: {
-                type: Type.STRING
-            },
-        },
-    },
-    required: ["isValidFace", "harmonyScore", "featureAnalysis", "suggestions"],
-};
-
-const morphSchema = {
-    type: Type.OBJECT,
-    properties: {
-        isValid: {
-            type: Type.BOOLEAN,
-            description: "اگر در هر دو تصویر چهره‌های انسانی واضح شناسایی شود true، در غیر این صورت false."
-        },
-        errorMessage: {
-            type: Type.STRING,
-            description: "یک پیام خطا در صورتی که چهره‌ای در یک یا هر دو تصویر شناسایی نشود. در غیر این صورت null خواهد بود."
-        },
-        summary: {
-            type: Type.STRING,
-            description: "یک خلاصه کلی و مثبت از تغییرات پیشنهادی به زبان فارسی."
-        },
-        suggestions: {
-            type: Type.ARRAY,
-            description: "لیستی از پیشنهادات مشخص برای تغییرات غیرتهاجمی به زبان فارسی.",
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    feature: { type: Type.STRING, description: "نام جزء چهره به فارسی (مثلاً: مو، پیشانی، ابروها، چشم‌ها، بینی، لب‌ها، خط فک)." },
-                    suggestion: { type: Type.STRING, description: "پیشنهاد مشخص برای آن جزء به زبان فارسی." }
-                },
-                required: ["feature", "suggestion"]
-            }
-        }
-    },
-    required: ["isValid", "summary", "suggestions"]
-};
-
-const colorHarmonySchema = {
-    type: Type.OBJECT,
-    properties: {
-        isValidFace: {
-            type: Type.BOOLEAN,
-            description: "اگر یک چهره انسانی واضح در تصویر شناسایی شود true، در غیر این صورت false."
-        },
-        errorMessage: {
-            type: Type.STRING,
-            description: "یک پیام خطا در صورتی که چهره‌ای شناسایی نشود. در غیر این صورت null خواهد بود."
-        },
-        summary: {
-            type: Type.STRING,
-            description: "یک خلاصه کوتاه از تحلیل ویژگی‌های چهره (تناژ پوست، رنگ مو و چشم) به زبان فارسی."
-        },
-        palettes: {
-            type: Type.ARRAY,
-            description: "لیستی از پالت‌های رنگی پیشنهادی.",
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    name: { type: Type.STRING, description: "یک نام خلاقانه و توصیفی برای پالت رنگی به زبان فارسی." },
-                    description: { type: Type.STRING, description: "توضیح اینکه چرا این پالت رنگی برای فرد مناسب است به زبان فارسی." },
-                    colors: {
-                        type: Type.ARRAY,
-                        description: "آرایه‌ای از ۵ یا ۶ کد رنگ هگزادسیمال (شامل #) که پالت را تشکیل می‌ده دهند.",
-                        items: { type: Type.STRING }
-                    }
-                },
-                required: ["name", "description", "colors"]
-            }
-        }
-    },
-    required: ["isValidFace", "summary", "palettes"]
-};
-
-const salonSchema = {
-    type: Type.ARRAY,
-    description: "لیستی از سالن‌های زیبایی زنانه.",
-    items: {
-        type: Type.OBJECT,
-        properties: {
-            name: {
-                type: Type.STRING,
-                description: "نام کامل سالن زیبایی."
-            },
-            address: {
-                type: Type.STRING,
-                description: "آدرس دقیق و کامل سالن."
-            },
-            phone: {
-                type: Type.STRING,
-                description: "شماره تماس سالن با کد شهر."
-            },
-            rating: {
-                type: Type.NUMBER,
-                description: "امتیاز کاربران در گوگل مپ (عددی بین ۱ تا ۵)."
-            }
-        },
-        required: ["name", "address", "phone", "rating"]
+/**
+ * A robust JSON parser to handle potential markdown code fences from the model.
+ * @param rawText The raw string response from the AI model.
+ * @returns The parsed JSON object.
+ * @throws An error if the JSON is malformed.
+ */
+function parseJsonResponse(rawText: string): any {
+    let cleanText = rawText.trim();
+    
+    // Check for markdown code block and extract JSON if present
+    const match = cleanText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (match && match[1]) {
+        cleanText = match[1];
     }
-};
+
+    try {
+        return JSON.parse(cleanText);
+    } catch (e) {
+        console.error("Failed to parse JSON response from Gemini:", cleanText);
+        // Provide a user-friendly error in Persian
+        throw new Error("پاسخ دریافت شده از هوش مصنوعی در قالب معتبر (JSON) نبود. لطفاً دوباره تلاش کنید.");
+    }
+}
 
 
 // --- Centralized AI Client Initialization ---
@@ -214,7 +98,7 @@ async function analyzeImageHandler(ai: GoogleGenAI, params: { base64Image: strin
         ۳. یک 'harmonyScore' (امتیاز هماهنگی) از ۱ تا ۱۰ ارائه دهید. این امتیاز باید بازتابی از تعادل و تقارن چهره باشد، نه یک قضاوت ذهنی درباره "زیبایی".
         ۴. یک آرایه 'featureAnalysis' (تحلیل اجزا) ارائه دهید. برای هر جزء کلیدی (مانند چشم‌ها، بینی، لب‌ها، خط فک، پوست)، یک تحلیل کوتاه، مثبت و سازنده ارائه دهید. نام اجزا و تحلیل باید به زبان فارسی باشد.
         ۵. یک آرایه 'suggestions' (پیشنهادات) ارائه دهید. نکات کلی و مفیدی برای بهبود ویژگی‌های طبیعی ارائه دهید. بر روش‌های غیرتهاجمی مانند مراقبت از پوست، آراستگی و تکنیک‌های آرایشی تمرکز کنید. پیشنهادات را به عنوان بهبودهای مثبت مطرح کنید، نه اصلاح نواقص.
-        ۶. کل خروجی شما باید اکیداً یک شیء JSON مطابق با اسکیمای ارائه شده باشد. هیچ متن اضافی یا قالب‌بندی مارک‌داون اضافه نکنید. تمام متن‌های تحلیل و پیشنهادات باید به زبان فارسی باشد.
+        ۶. خروجی شما باید **فقط و فقط** یک شیء JSON باشد. هیچ متن اضافی، توضیحات، یا قالب‌بندی مارک‌داون (مانند \`\`\`json) در ابتدا یا انتهای خروجی قرار ندهید. ساختار JSON باید دقیقاً به این شکل باشد: { "isValidFace": boolean, "errorMessage": string | null, "harmonyScore": number | null, "featureAnalysis": [{ "feature": string, "analysis": string }], "suggestions": [string] }. تمام متن‌های داخل JSON باید به زبان فارسی باشد.
     `;
 
     const imagePart = { inlineData: { mimeType: 'image/jpeg', data: base64Image } };
@@ -224,13 +108,12 @@ async function analyzeImageHandler(ai: GoogleGenAI, params: { base64Image: strin
         model: 'gemini-2.5-flash',
         contents: { parts: [textPart, imagePart] },
         config: {
-            responseMimeType: "application/json",
-            responseSchema: analysisSchema,
             temperature: 0.3,
+            thinkingConfig: { thinkingBudget: 0 },
         }
     });
 
-    return JSON.parse(response.text.trim());
+    return parseJsonResponse(response.text);
 }
 
 async function getMorphSuggestionsHandler(ai: GoogleGenAI, params: { sourceImageBase64: string, targetImageBase64: string }) {
@@ -241,17 +124,10 @@ async function getMorphSuggestionsHandler(ai: GoogleGenAI, params: { sourceImage
         شما یک مشاور زیبایی حرفه‌ای و متخصص هوش مصنوعی هستید. وظیفه شما مقایسه دقیق دو چهره (چهره مبدا و چهره هدف) و ارائه پیشنهادات مشخص و کاربردی است تا چهره مبدا به چهره هدف شبیه‌تر شود. تمرکز مطلقاً بر روش‌های غیرتهاجمی است.
         دستورالعمل‌های دقیق:
         ۱. **اعتبارسنجی تصاویر:** ابتدا بررسی کنید که هر دو تصویر حاوی یک چهره انسانی واضح هستند. اگر نه، isValid را false و errorMessage را با دلیل مناسب پر کنید. در غیر این صورت، isValid را true قرار دهید.
-        ۲. **ایمنی و محدودیت‌ها:** پیشنهادات شما باید ۱۰۰٪ غیرتهاجمی باشند. فقط موارد زیر مجاز است:
-            - مدل، رنگ و حالت مو.
-            - فرم‌دهی و آرایش ابروها.
-            - تکنیک‌های آرایشی (مانند خط چشم، سایه، رژ لب).
-            - کانتورینگ و هایلایتینگ برای تغییر ظاهری فرم بینی، پیشانی، گونه‌ها و خط فک.
-            - مدل ریش و سبیل.
-            - استفاده از اکسسوری‌ها مانند عینک.
-            **ممنوعیت مطلق:** هیچ اشاره‌ای به جراحی، تزریق، یا هرگونه رویه پزشکی نکنید.
+        ۲. **ایمنی و محدودیت‌ها:** پیشنهادات شما باید ۱۰۰٪ غیرتهاجمی باشند. فقط موارد زیر مجاز است: مدل، رنگ و حالت مو، فرم‌دهی و آرایش ابروها، تکنیک‌های آرایشی (مانند خط چشم، سایه، رژ لب)، کانتورینگ و هایلایتینگ، مدل ریش و سبیل، و استفاده از اکسسوری‌ها. **ممنوعیت مطلق:** هیچ اشاره‌ای به جراحی، تزریق، یا هرگونه رویه پزشکی نکنید.
         ۳. **خلاصه مقایسه‌ای:** در فیلد 'summary'، یک خلاصه کلی ارائه دهید که تفاوت‌های کلیدی بین دو چهره را بیان کرده و به طور مثبت توضیح دهد که چگونه می‌توان با تغییرات پیشنهادی، چهره مبدا را به هدف نزدیک‌تر کرد.
-        ۴. **پیشنهادات جزئی و مقایسه‌ای:** این مهم‌ترین بخش است. برای هر جزء در لیست (مو، پیشانی، ابروها، چشم‌ها، بینی، گونه‌ها، لب‌ها، خط فک)، ابتدا یک مقایسه کوتاه بین چهره مبدا و هدف انجام دهید. سپس، بر اساس آن مقایسه، یک پیشنهاد مشخص برای شبیه‌سازی آن جزء در چهره مبدا به چهره هدف ارائه دهید.
-        ۵. **فرمت خروجی:** خروجی باید فقط یک شیء JSON مطابق با اسکیمای ارائه شده و تماماً به زبان فارسی باشد.
+        ۴. **پیشنهادات جزئی و مقایسه‌ای:** برای هر جزء، ابتدا یک مقایسه کوتاه بین چهره مبدا و هدف انجام دهید. سپس، یک پیشنهاد مشخص برای شبیه‌سازی آن جزء ارائه دهید.
+        ۵. **فرمت خروجی:** خروجی شما باید **فقط و فقط** یک شیء JSON باشد. هیچ متن اضافی یا قالب‌بندی مارک‌داون اضافه نکنید. ساختار JSON باید دقیقاً به این شکل باشد: { "isValid": boolean, "errorMessage": string | null, "summary": string, "suggestions": [{ "feature": string, "suggestion": string }] }. تمام متون باید به زبان فارسی باشد.
     `;
     
     const sourceImagePart = { inlineData: { mimeType: 'image/jpeg', data: sourceImageBase64 } };
@@ -262,13 +138,12 @@ async function getMorphSuggestionsHandler(ai: GoogleGenAI, params: { sourceImage
         model: 'gemini-2.5-flash',
         contents: { parts: [textPart, sourceImagePart, targetImagePart] },
         config: {
-            responseMimeType: "application/json",
-            responseSchema: morphSchema,
             temperature: 0.4,
+            thinkingConfig: { thinkingBudget: 0 },
         }
     });
 
-    return JSON.parse(response.text.trim());
+    return parseJsonResponse(response.text);
 }
 
 async function getColorHarmonySuggestionsHandler(ai: GoogleGenAI, params: { base64Image: string }) {
@@ -278,15 +153,12 @@ async function getColorHarmonySuggestionsHandler(ai: GoogleGenAI, params: { base
     const prompt = `
         شما یک هوش مصنوعی متخصص در تئوری رنگ و استایلیست شخصی هستید. وظیفه شما تحلیل دقیق چهره در تصویر ارسالی و ارائه پیشنهادهای هماهنگی رنگ است.
         دستورالعمل‌ها:
-        ۱. **اعتبارسنجی چهره:** ابتدا بررسی کنید که تصویر حاوی یک چهره انسانی واضح است. اگر نه، isValidFace را false و errorMessage را با یک دلیل مناسب پر کنید. در غیر این صورت، isValidFace را true قرار دهید.
+        ۱. **اعتبارسنجی چهره:** ابتدا بررسی کنید که تصویر حاوی یک چهره انسانی واضح است. اگر نه، isValidFace را false و errorMessage را با یک دلیل مناسب پر کنید.
         ۲. **تحلیل ویژگی‌ها:** تناژ پوست (گرم، سرد، یا خنثی)، رنگ مو، و رنگ چشم‌ها را از تصویر تشخیص دهید.
-        ۳. **خلاصه تحلیل:** در فیلد 'summary'، یک خلاصه کوتاه و مفید از ویژگی‌های تحلیل شده (تناژ پوست، رنگ مو و چشم) به زبان فارسی ارائه دهید.
+        ۳. **خلاصه تحلیل:** در فیلد 'summary'، یک خلاصه کوتاه و مفید از ویژگی‌های تحلیل شده به زبان فارسی ارائه دهید.
         ۴. **ارائه پالت‌های رنگی:** سه پالت رنگی متمایز و هماهنگ با ویژگی‌های چهره پیشنهاد دهید.
-        ۵. **جزئیات هر پالت:** برای هر پالت در آرایه 'palettes':
-            - یک 'name' خلاقانه و توصیفی به زبان فارسی انتخاب کنید (مثلاً "گرمای پاییزی"، "آرامش اقیانوسی"، "بهار پرجنب‌وجوش").
-            - یک 'description' بنویسید که به زبان فارسی توضیح دهد چرا این پالت رنگی با تناژ پوست، مو و چشم فرد هماهنگ است و چه حسی را منتقل می‌کند.
-            - یک آرایه 'colors' شامل دقیقاً ۵ کد رنگ هگزادسیمال (مانند "#RRGGBB") که مکمل یکدیگر هستند ارائه دهید.
-        ۶. **فرمت خروجی:** خروجی شما باید اکیداً یک شیء JSON مطابق با اسکیمای ارائه شده باشد. هیچ متن اضافی یا قالب‌بندی مارک‌داون خارج از JSON اضافه نکنید. تمام متون باید به زبان فارسی باشند.
+        ۵. **جزئیات هر پالت:** برای هر پالت، یک 'name' خلاقانه، یک 'description' (توضیح هماهنگی)، و یک آرایه 'colors' شامل دقیقاً ۵ کد رنگ هگزادسیمال (مانند "#RRGGBB") ارائه دهید.
+        ۶. **فرمت خروجی:** خروجی شما باید **فقط و فقط** یک شیء JSON باشد. هیچ متن اضافی یا قالب‌بندی مارک‌داون اضافه نکنید. ساختار JSON باید دقیقاً به این شکل باشد: { "isValidFace": boolean, "errorMessage": string | null, "summary": string, "palettes": [{ "name": string, "description": string, "colors": [string] }] }. تمام متون باید به زبان فارسی باشند.
     `;
 
     const imagePart = { inlineData: { mimeType: 'image/jpeg', data: base64Image } };
@@ -296,13 +168,12 @@ async function getColorHarmonySuggestionsHandler(ai: GoogleGenAI, params: { base
         model: 'gemini-2.5-flash',
         contents: { parts: [textPart, imagePart] },
         config: {
-            responseMimeType: "application/json",
-            responseSchema: colorHarmonySchema,
             temperature: 0.5,
+            thinkingConfig: { thinkingBudget: 0 },
         }
     });
 
-    return JSON.parse(response.text.trim());
+    return parseJsonResponse(response.text);
 }
 
 async function findNearbySalonsHandler(ai: GoogleGenAI, params: { locationQuery: string }) {
@@ -310,30 +181,25 @@ async function findNearbySalonsHandler(ai: GoogleGenAI, params: { locationQuery:
     if (!locationQuery) throw new Error("Missing 'locationQuery' parameter.");
 
     const prompt = `
-        شما یک دستیار جستجوی محلی هستید. وظیفه شما یافتن بهترین سالن‌های زیبایی زنانه بر اساس موقعیت مکانی کاربر است.
-        بر اساس موقعیت ورودی کاربر ("${locationQuery}")، لطفاً ۱۰ مورد از برترین سالن‌های زیبایی زنانه در آن منطقه یا نزدیک به آن را لیست کنید.
+        شما یک دستیار جستجوی محلی هستید. وظیفه شما یافتن ۱۰ مورد از برترین سالن‌های زیبایی زنانه بر اساس موقعیت مکانی کاربر ("${locationQuery}") است.
         این لیست باید بر اساس بالاترین امتیاز کاربران در گوگل مپ مرتب شود (از بیشترین به کمترین).
-        برای هر سالن، اطلاعات زیر را ارائه دهید:
-        - name: نام کامل سالن
-        - address: آدرس دقیق
-        - phone: شماره تلفن (در صورت وجود)
-        - rating: امتیاز کاربران در گوگل مپ (یک عدد)
-
-        خروجی شما باید اکیداً یک آرایه JSON مطابق با اسکیمای ارائه شده باشد. هیچ متن اضافی یا قالب‌بندی دیگری اضافه نکنید.
+        خروجی شما باید **فقط و فقط** یک آرایه JSON باشد. هیچ متن اضافی یا قالب‌بندی دیگری اضافه نکنید.
+        ساختار هر شیء در آرایه باید دقیقاً به این شکل باشد: { "name": string, "address": string, "phone": string, "rating": number }.
     `;
 
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
-            responseMimeType: "application/json",
-            responseSchema: salonSchema,
             temperature: 0.2,
+            thinkingConfig: { thinkingBudget: 0 },
         }
     });
 
-    const result = JSON.parse(response.text.trim());
-    // Sort by rating just in case the model doesn't do it perfectly
-    result.sort((a: {rating: number}, b: {rating: number}) => b.rating - a.rating);
+    const result = parseJsonResponse(response.text);
+    // Ensure sorting by rating as a fallback, in case the model doesn't do it perfectly.
+    if (Array.isArray(result)) {
+        result.sort((a: {rating?: number}, b: {rating?: number}) => (b.rating ?? 0) - (a.rating ?? 0));
+    }
     return result;
 }

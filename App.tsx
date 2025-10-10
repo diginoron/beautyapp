@@ -20,6 +20,7 @@ import AuthFlow from './components/AuthFlow';
 import SplashScreen from './components/SplashScreen';
 import { supabase, supabaseUrl } from './services/supabase';
 import ConfigurationError from './components/ConfigurationError';
+import { resizeImageFromFile, resizeImageFromDataUrl } from './services/imageUtils';
 
 
 const App: React.FC = () => {
@@ -103,25 +104,37 @@ const App: React.FC = () => {
         }
     };
 
-    const handleImageUpload = (file: File) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const base64String = (reader.result as string).split(',')[1];
-            setImageBase64(base64String);
-            setImagePreview(reader.result as string);
+    const handleImageUpload = async (file: File) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const { base64, preview } = await resizeImageFromFile(file);
+            setImageBase64(base64);
+            setImagePreview(preview);
             setAnalysis(null);
-            setError(null);
-        };
-        reader.readAsDataURL(file);
+        } catch (err) {
+            console.error("Image resizing failed:", err);
+            setError("خطا در پردازش تصویر. لطفاً یک تصویر دیگر را امتحان کنید.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleCapture = (dataUrl: string) => {
-        const base64String = dataUrl.split(',')[1];
-        setImageBase64(base64String);
-        setImagePreview(dataUrl);
-        setAnalysis(null);
+    const handleCapture = async (dataUrl: string) => {
+        setIsLoading(true);
         setError(null);
         setShowCamera(false);
+        try {
+            const { base64, preview } = await resizeImageFromDataUrl(dataUrl);
+            setImageBase64(base64);
+            setImagePreview(preview);
+            setAnalysis(null);
+        } catch (err) {
+            console.error("Captured image resizing failed:", err);
+            setError("خطا در پردازش تصویر دوربین. لطفاً دوباره تلاش کنید.");
+        } finally {
+            setIsLoading(false);
+        }
     };
     
     const handleAnalyzeClick = useCallback(async () => {
@@ -219,7 +232,7 @@ const App: React.FC = () => {
                     
                     {mode === 'single' && (
                         <>
-                           {!imagePreview && !showCamera && (
+                           {!imagePreview && !showCamera && !isLoading &&(
                                 <ImageUploader onImageUpload={handleImageUpload} onUseCamera={() => setShowCamera(true)} />
                             )}
                             
