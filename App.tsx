@@ -20,23 +20,15 @@ import AuthFlow from './components/AuthFlow';
 import SplashScreen from './components/SplashScreen';
 import { supabase, supabaseUrl } from './services/supabase';
 import ConfigurationError from './components/ConfigurationError';
-import ApiKeyError from './components/ApiKeyError';
 
 
 const App: React.FC = () => {
-    // Check 1: Supabase configuration. This is the most critical step for database connection.
-    // FIX: Cast `supabaseUrl` to `string` to avoid a TypeScript error when comparing a literal type
-    // with a different string literal. This preserves the runtime check's intent.
-    if ((supabaseUrl as string) === "https://example.supabase.co") {
+    // First, check for configuration. This is the most critical step.
+    // FIX: Widen the type of the placeholder URL to string to resolve the TypeScript error
+    // that occurs when comparing two different string literals. This preserves the check's logic.
+    const unconfiguredUrl: string = "https://example.supabase.co";
+    if (supabaseUrl === unconfiguredUrl) {
         return <ConfigurationError />;
-    }
-    
-    // Check 2: Gemini API Key configuration. This is critical for AI features.
-    // The build platform replaces `process.env.GEMINI_API_KEY` with the actual key string.
-    // If the key is not set, it will be undefined or an empty string after replacement.
-    const isApiKeyConfigured = process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.startsWith('AIza');
-    if (!isApiKeyConfigured) {
-        return <ApiKeyError />;
     }
     
     const [showSplash, setShowSplash] = useState<boolean>(true);

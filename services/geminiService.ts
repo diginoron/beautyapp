@@ -1,15 +1,16 @@
-
 import { GoogleGenAI, Type } from '@google/genai';
 import type { AnalysisResult, MorphResult, ColorHarmonyResult, Salon } from '../types';
 
 // A single, clear error message for any configuration issue.
-const CONFIGURATION_ERROR_MESSAGE = "خطای پیکربی: کلید API برای سرویس هوش مصنوعی به درستی تنظیم نشده است. لطفاً تنظیمات پروژه را بررسی کنید.";
+const CONFIGURATION_ERROR_MESSAGE = "خطای پیکربندی: کلید API برای سرویس هوش مصنوعی به درستی تنظیم نشده است. لطفاً تنظیمات پروژه را بررسی کنید.";
+const GENERIC_NETWORK_ERROR = "خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.";
+const REGIONAL_BLOCK_ERROR = "خطا در اتصال به سرویس هوش مصنوعی. به نظر می‌رسد دسترسی به سرویس‌های Google از منطقه شما محدود است. لطفاً برای ادامه از یک ابزار تغییر IP (وی‌پی‌ان) معتبر استفاده کنید.";
 
 
 const getAiClient = () => {
-    // This line assumes the execution platform will replace `process.env.GEMINI_API_KEY` with the secret.
+    // This line assumes the execution platform will replace `process.env.API_KEY` with the secret.
     // It will throw a ReferenceError if the `process` object is not defined and not replaced by the platform.
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.API_KEY;
 
     // Enhanced check: Ensure the key exists AND looks like a valid Google AI key.
     // This helps catch scenarios where the wrong environment variable is being inherited.
@@ -19,6 +20,24 @@ const getAiClient = () => {
         throw new Error("API key is invalid or missing.");
     }
     return new GoogleGenAI({ apiKey });
+};
+
+// Centralized error handler for all Gemini API calls
+const handleApiError = (error: unknown): never => {
+    console.error("Gemini Service Error:", error);
+
+    // 1. Check for configuration errors first
+    if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is invalid or missing.")) {
+        throw new Error(CONFIGURATION_ERROR_MESSAGE);
+    }
+    
+    // 2. Check for network/fetch-related errors which suggest a regional block
+    if (error instanceof Error && (error.message.toLowerCase().includes('fetch') || error.message.toLowerCase().includes('network'))) {
+        throw new Error(REGIONAL_BLOCK_ERROR);
+    }
+
+    // 3. Throw a generic error for everything else
+    throw new Error(GENERIC_NETWORK_ERROR);
 };
 
 
@@ -201,11 +220,7 @@ export const analyzeImage = async (base64Image: string): Promise<AnalysisResult>
         const result = JSON.parse(jsonString);
         return result as AnalysisResult;
     } catch (error) {
-        console.error("Error in analyzeImage:", error);
-        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is invalid or missing.")) {
-            throw new Error(CONFIGURATION_ERROR_MESSAGE);
-        }
-        throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
+        handleApiError(error);
     }
 };
 
@@ -252,11 +267,7 @@ export const getMorphSuggestions = async (sourceImageBase64: string, targetImage
         return result as MorphResult;
 
     } catch (error) {
-        console.error("Error in getMorphSuggestions:", error);
-        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is invalid or missing.")) {
-            throw new Error(CONFIGURATION_ERROR_MESSAGE);
-        }
-        throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
+        handleApiError(error);
     }
 };
 
@@ -294,11 +305,7 @@ export const getColorHarmonySuggestions = async (base64Image: string): Promise<C
         const result = JSON.parse(jsonString);
         return result as ColorHarmonyResult;
     } catch (error) {
-        console.error("Error in getColorHarmonySuggestions:", error);
-        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is invalid or missing.")) {
-            throw new Error(CONFIGURATION_ERROR_MESSAGE);
-        }
-        throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
+        handleApiError(error);
     }
 };
 
@@ -334,10 +341,6 @@ export const findNearbySalons = async (locationQuery: string): Promise<Salon[]> 
         result.sort((a: Salon, b: Salon) => b.rating - a.rating);
         return result as Salon[];
     } catch (error) {
-        console.error("Error in findNearbySalons:", error);
-        if (error instanceof ReferenceError || (error instanceof Error && error.message === "API key is invalid or missing.")) {
-            throw new Error(CONFIGURATION_ERROR_MESSAGE);
-        }
-        throw new Error("خطا در ارتباط با سرویس هوش مصنوعی. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
+        handleApiError(error);
     }
 };

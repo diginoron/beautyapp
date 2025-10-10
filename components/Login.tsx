@@ -32,12 +32,12 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToForgotPasswor
             // onAuthStateChanged in App.tsx will handle successful login
         } catch (err: any) {
             console.error('Login Error:', err.message);
-            if (err.message.includes('Email not confirmed')) {
+            if (err.message.includes('Failed to fetch')) {
+                 setError('خطا در اتصال به سرور. به نظر می‌رسد دسترسی به این سرویس از منطقه شما محدود است. لطفاً برای ادامه از یک ابزار تغییر IP (وی‌پی‌ان) معتبر استفاده کرده و دوباره تلاش کنید.');
+            } else if (err.message.includes('Email not confirmed')) {
                  setError('ایمیل شما هنوز تایید نشده است. لطفاً لینک فعال‌سازی ارسال شده به ایمیل خود را چک کنید (پوشه اسپم را نیز بررسی کنید).');
             } else if (err.message.includes('Invalid login credentials')) {
                  setError('ایمیل یا رمز عبور نامعتبر است.');
-            } else if (err.message.includes('Failed to fetch')) {
-                 setError('خطا در اتصال به شبکه. لطفاً فایل services/supabase.ts را بررسی کنید و مطمئن شوید که اطلاعات اتصال Supabase به درستی وارد شده است. اگر در ایران هستید، ممکن است نیاز به ابزار تغییر IP داشته باشید.');
             } else {
                  setError('خطایی در فرآیند ورود رخ داد. لطفاً دوباره تلاش کنید.');
             }
