@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import type { AnalysisResult, User } from './types';
 import { analyzeImage } from './services/geminiService';
@@ -18,18 +17,11 @@ import HistoryFlow from './components/HistoryFlow';
 import Menu from './components/Menu';
 import AuthFlow from './components/AuthFlow';
 import SplashScreen from './components/SplashScreen';
-import { supabase, supabaseUrl } from './services/supabase';
-import ConfigurationError from './components/ConfigurationError';
+import { supabase } from './services/supabase';
 import { resizeImageFromFile, resizeImageFromDataUrl } from './services/imageUtils';
 
 
 const App: React.FC = () => {
-    // Check for Supabase configuration
-    const unconfiguredUrl: string = "https://rgstkjzexetemzcixrxr.supabase.co";
-    if (supabaseUrl === unconfiguredUrl) {
-        return <ConfigurationError />;
-    }
-    
     const [showSplash, setShowSplash] = useState<boolean>(true);
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
