@@ -22,8 +22,8 @@ const AuthFlow: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-slate-100 p-4 animate-fade-in">
-            <div className="w-full max-w-md">
+        <div className="min-h-screen flex flex-col items-center bg-slate-100 p-4 animate-fade-in">
+            <main className="w-full max-w-md flex-grow flex flex-col justify-center">
                 <div className="text-center mb-8">
                     <FaceIcon className="w-12 h-12 text-indigo-500 mx-auto mb-3" />
                     <h1 className="text-3xl font-extrabold tracking-tight text-slate-800">تحلیلگر زیبایی چهره</h1>
@@ -32,7 +32,12 @@ const AuthFlow: React.FC = () => {
                 <div className="bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
                     {renderView()}
                 </div>
-            </div>
+            </main>
+             <footer className="w-full text-center py-4">
+                 <p className="text-xs text-slate-500">
+                    نسخه 1.0.0
+                </p>
+            </footer>
         </div>
     );
 };
