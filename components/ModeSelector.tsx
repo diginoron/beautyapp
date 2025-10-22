@@ -1,8 +1,8 @@
 import React from 'react';
-import { FaceIcon, UsersIcon, FaceMagicIcon, PaletteIcon, MapPinIcon } from './icons';
+import { FaceIcon, UsersIcon, FaceMagicIcon, PaletteIcon, MapPinIcon, HistoryIcon } from './icons';
 
 interface ModeSelectorProps {
-    onSelectMode: (mode: 'single' | 'compare' | 'morph' | 'color' | 'salonFinder') => void;
+    onSelectMode: (mode: 'single' | 'compare' | 'morph' | 'color' | 'salonFinder' | 'history') => void;
 }
 
 const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
@@ -40,9 +40,17 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
                 <span className="text-lg font-semibold text-slate-800 text-center">تحلیل هماهنگی رنگ</span>
                 <p className="text-xs text-slate-500 mt-1 text-center font-light">پالت‌های رنگی هماهنگ با پوست و موی شما.</p>
             </button>
+             <button
+                onClick={() => onSelectMode('history')}
+                className="w-full h-44 flex flex-col items-center justify-center p-4 bg-slate-100/50 border-2 border-slate-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+                <HistoryIcon className="w-10 h-10 text-purple-500 mb-2" />
+                <span className="text-lg font-semibold text-slate-800 text-center">سابقه تحلیل‌ها</span>
+                <p className="text-xs text-slate-500 mt-1 text-center font-light">مشاهده تحلیل‌های گذشته شما.</p>
+            </button>
             <button
                 onClick={() => onSelectMode('salonFinder')}
-                className="w-full h-44 flex flex-col items-center justify-center p-4 bg-slate-100/50 border-2 border-slate-200 rounded-xl hover:border-pink-500 hover:bg-pink-50 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500 md:col-start-2 lg:col-start-auto"
+                className="w-full h-44 flex flex-col items-center justify-center p-4 bg-slate-100/50 border-2 border-slate-200 rounded-xl hover:border-pink-500 hover:bg-pink-50 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500"
             >
                 <MapPinIcon className="w-10 h-10 text-pink-500 mb-2" />
                 <span className="text-lg font-semibold text-slate-800 text-center">سالن‌یاب</span>
