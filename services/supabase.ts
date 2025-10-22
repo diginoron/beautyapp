@@ -21,5 +21,10 @@ import { createClient } from '@supabase/supabase-js';
 export const supabaseUrl = "https://rgstkjzexetemzcixrxr.supabase.co"; // <-- آدرس واقعی پروژه Supabase خود را اینجا قرار دهید
 const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnc3RranpleGV0ZW16Y2l4cnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3NzgzNjksImV4cCI6MjA3NTM1NDM2OX0.Lod8RSMKz68WHsSGXaqkaCOdbo9nNJ3Tbu5ggAbKxPk"; // <-- کلید عمومی (anon) واقعی خود را اینجا قرار دهید
 
+// A check to see if the user has configured their Supabase credentials
+export const isSupabaseConfigured = 
+    supabaseUrl !== "https://rgstkjzexetemzcixrxr.supabase.co" &&
+    supabaseAnonKey !== "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnc3RranpleGV0ZW16Y2l4cnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3NzgzNjksImV4cCI6MjA3NTM1NDM2OX0.Lod8RSMKz68WHsSGXaqkaCOdbo9nNJ3Tbu5ggAbKxPk";
+
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

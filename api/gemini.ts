@@ -3,72 +3,72 @@ export const config = {
     runtime: 'edge',
 };
 
-/**
- * یک پارسر JSON قوی برای مدیریت کدهای مارک‌داون احتمالی از مدل.
- * @param rawText پاسخ متنی خام از مدل هوش مصنوعی.
- * @returns شیء JSON پارس شده.
- * @throws در صورت نامعتبر بودن JSON، خطا پرتاب می‌کند.
- */
-function parseJsonResponse(rawText: string): any {
-    let cleanText = rawText.trim();
-    
-    // بررسی وجود بلاک کد مارک‌داون و استخراج JSON در صورت وجود
-    const match = cleanText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (match && match[1]) {
-        cleanText = match[1];
-    }
-
-    try {
-        return JSON.parse(cleanText);
-    } catch (e) {
-        console.error("Failed to parse JSON response from Gemini:", cleanText);
-        // ارائه یک خطای کاربرپسند به زبان فارسی
-        throw new Error("پاسخ دریافت شده از هوش مصنوعی در قالب معتبر (JSON) نبود. لطفاً دوباره تلاش کنید.");
-    }
-}
-
 // --- مدیریت متمرکز کلید API ---
 
 function getApiKey(): string {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || !apiKey.startsWith('AIza')) {
+    if (!apiKey) {
         console.error("CRITICAL: Gemini API key is missing or invalid on the server.");
-        throw new Error("خطای پیکربندی سرور: متغیر GEMINI_API_KEY در متغیرهای محیطی تنظیم نشده است.");
+        throw new Error("خطای پیکربندی سرور: کلید API هوش مصنوعی تنظیم نشده است.");
     }
     return apiKey;
 }
 
-// --- تابع عمومی برای فراخوانی Gemini REST API ---
+// --- تابع عمومی برای فراخوانی Gemini REST API با قابلیت تلاش مجدد و Timeout ---
 
 async function callGemini(model: string, body: object): Promise<any> {
     const apiKey = getApiKey();
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-    const apiResponse = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-    });
+    const executeFetch = async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30-second timeout
 
-    const responseData = await apiResponse.json();
+        try {
+            const apiResponse = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
 
-    if (!apiResponse.ok) {
-        console.error("Gemini API Error:", responseData);
-        throw new Error(responseData.error?.message || 'خطا در ارتباط با سرور هوش مصنوعی.');
-    }
+            const responseData = await apiResponse.json();
 
-    const rawText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (rawText === undefined || rawText === null) {
-        console.error("Invalid Gemini Response Structure:", responseData);
-        // بررسی مسدود شدن به دلیل ایمنی
-        if (responseData.candidates?.[0]?.finishReason === 'SAFETY') {
-            throw new Error("پاسخ به دلیل محدودیت‌های ایمنی مسدود شد. لطفاً تصویر یا متن دیگری را امتحان کنید.");
+            if (!apiResponse.ok) {
+                console.error("Gemini API Error:", responseData);
+                throw new Error(responseData.error?.message || 'خطا در ارتباط با سرور هوش مصنوعی.');
+            }
+
+            if (!responseData.candidates || responseData.candidates.length === 0) {
+                if (responseData.promptFeedback && responseData.promptFeedback.blockReason) {
+                     throw new Error("پاسخ به دلیل محدودیت‌های ایمنی مسدود شد. لطفاً تصویر یا متن دیگری را امتحان کنید.");
+                }
+                throw new Error("پاسخ نامعتبر یا خالی از هوش مصنوعی دریافت شد.");
+            }
+
+            const rawText = responseData.candidates[0]?.content?.parts?.[0]?.text;
+            if (rawText === undefined || rawText === null) {
+                throw new Error("ساختار پاسخ از هوش مصنوعی نامعتبر است.");
+            }
+
+            return JSON.parse(rawText);
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error instanceof Error && error.name === 'AbortError') {
+                throw new Error('پاسخ از سرور هوش مصنوعی در زمان مقرر دریافت نشد (Timeout).');
+            }
+            throw error; // Re-throw other errors
         }
-        throw new Error("پاسخ نامعتبر از هوش مصنوعی دریافت شد.");
-    }
+    };
 
-    // چون responseMimeType: "application/json" است، مدل باید مستقیماً JSON برگرداند
-    return JSON.parse(rawText);
+    try {
+        return await executeFetch();
+    } catch (error) {
+        console.warn("First API call failed. Retrying once...", error);
+        // Simple retry once
+        return await executeFetch();
+    }
 }
 
 
