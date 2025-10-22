@@ -1,13 +1,15 @@
 import React from 'react';
-import { HomeIcon, CloseIcon } from './icons';
+import { HomeIcon, CloseIcon, HistoryIcon, LogoutIcon } from './icons';
 
 interface MenuProps {
     isOpen: boolean;
     onClose: () => void;
     onGoHome: () => void;
+    onShowHistory: () => void;
+    onLogout: () => void;
 }
 
-const Menu: React.FC<MenuProps> = ({ isOpen, onClose, onGoHome }) => {
+const Menu: React.FC<MenuProps> = ({ isOpen, onClose, onGoHome, onShowHistory, onLogout }) => {
     return (
         <>
             {/* Overlay */}
@@ -34,21 +36,46 @@ const Menu: React.FC<MenuProps> = ({ isOpen, onClose, onGoHome }) => {
                         </button>
                     </div>
                     <nav className="flex-grow">
-                        <ul>
-                            <li className="mb-4">
+                        <ul className="space-y-2">
+                            <li>
                                 <button
                                     onClick={() => {
                                         onGoHome();
                                         onClose();
                                     }}
-                                    className="w-full flex items-center p-2 text-slate-700 rounded-md hover:bg-slate-100 transition-colors"
+                                    className="w-full flex items-center p-3 text-slate-700 rounded-md hover:bg-slate-100 transition-colors"
                                 >
                                     <HomeIcon className="w-5 h-5 ml-3" />
                                     <span>صفحه نخست</span>
                                 </button>
                             </li>
+                             <li>
+                                <button
+                                    onClick={() => {
+                                        onShowHistory();
+                                        onClose();
+                                    }}
+                                    className="w-full flex items-center p-3 text-slate-700 rounded-md hover:bg-slate-100 transition-colors"
+                                >
+                                    <HistoryIcon className="w-5 h-5 ml-3" />
+                                    <span>سابقه تحلیل‌ها</span>
+                                </button>
+                            </li>
                         </ul>
                     </nav>
+
+                    <div className="pt-4 border-t border-slate-200">
+                        <button
+                            onClick={() => {
+                                onLogout();
+                                onClose();
+                            }}
+                            className="w-full flex items-center p-3 text-red-600 rounded-md hover:bg-red-50 transition-colors"
+                        >
+                            <LogoutIcon className="w-5 h-5 ml-3" />
+                            <span>خروج از حساب</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </>

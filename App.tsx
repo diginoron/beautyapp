@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import type { AnalysisResult } from './types';
+import type { Session } from '@supabase/supabase-js';
+import type { AnalysisResult, User } from './types';
 import { analyzeImage } from './services/geminiService';
+import { supabase } from './services/supabase';
+import { saveAnalysis } from './services/historyService';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ImageUploader from './components/ImageUploader';
@@ -14,12 +17,16 @@ import ColorHarmonyFlow from './components/ColorHarmonyFlow';
 import SalonFinderFlow from './components/SalonFinderFlow';
 import Menu from './components/Menu';
 import SplashScreen from './components/SplashScreen';
+import AuthFlow from './components/AuthFlow';
+import HistoryFlow from './components/HistoryFlow';
 import { resizeImageFromFile, resizeImageFromDataUrl } from './services/imageUtils';
 
 
 const App: React.FC = () => {
     const [showSplash, setShowSplash] = useState<boolean>(true);
-    const [mode, setMode] = useState<'initial' | 'single' | 'compare' | 'morph' | 'color' | 'salonFinder'>('initial');
+    const [session, setSession] = useState<Session | null>(null);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [mode, setMode] = useState<'initial' | 'single' | 'compare' | 'morph' | 'color' | 'salonFinder' | 'history'>('initial');
     
     // State for single analysis mode
     const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -30,6 +37,23 @@ const App: React.FC = () => {
     const [showCamera, setShowCamera] = useState<boolean>(false);
     
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    useEffect(() => {
+        const getInitialSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setSession(session);
+            setCurrentUser(session ? { id: session.user.id, email: session.user.email } : null);
+        };
+
+        getInitialSession();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session);
+            setCurrentUser(session ? { id: session.user.id, email: session.user.email } : null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
 
     const handleImageUpload = async (file: File) => {
         setIsLoading(true);
@@ -77,6 +101,12 @@ const App: React.FC = () => {
             const result = await analyzeImage(imageBase64);
             if(result.isValidFace) {
                  setAnalysis(result);
+                 if (currentUser) {
+                    saveAnalysis(currentUser.id, result, imageBase64).catch(err => {
+                        console.error("Failed to save analysis to history:", err);
+                        // This is a non-critical error, so we don't show it to the user
+                    });
+                 }
             } else {
                 setError(result.errorMessage || 'چهره‌ای در تصویر شناسایی نشد یا تصویر نامعتبر است.');
             }
@@ -90,7 +120,7 @@ const App: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [imageBase64]);
+    }, [imageBase64, currentUser]);
 
     const handleReset = () => {
         setImageBase64(null);
@@ -115,8 +145,19 @@ const App: React.FC = () => {
         setIsMenuOpen(!isMenuOpen);
     }
     
+    const handleLogout = async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) console.error('Error logging out:', error);
+        setIsMenuOpen(false);
+        handleReset();
+    };
+    
     if (showSplash) {
         return <SplashScreen onEnter={() => setShowSplash(false)} />;
+    }
+
+    if (!session || !currentUser) {
+        return <AuthFlow />;
     }
 
     return (
@@ -126,6 +167,8 @@ const App: React.FC = () => {
                 isOpen={isMenuOpen}
                 onClose={() => setIsMenuOpen(false)}
                 onGoHome={handleReset}
+                onShowHistory={() => setMode('history')}
+                onLogout={handleLogout}
             />
             <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center">
                 <div className="w-full max-w-4xl text-center">
@@ -201,6 +244,7 @@ const App: React.FC = () => {
                     {mode === 'morph' && <MorphFlow onBack={handleReset} />}
                     {mode === 'color' && <ColorHarmonyFlow onBack={handleReset} />}
                     {mode === 'salonFinder' && <SalonFinderFlow onBack={handleReset} />}
+                    {mode === 'history' && <HistoryFlow currentUser={currentUser} onBack={handleReset} />}
                 </div>
             </main>
             <Footer />
