@@ -43,14 +43,7 @@ export interface Salon {
   rating: number;
 }
 
-export interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  mobile: string;
-  email: string;
-}
-
+// FIX: Added missing HistoryItem interface.
 export interface HistoryItem {
   id: string;
   created_at: string;
@@ -58,4 +51,10 @@ export interface HistoryItem {
   feature_analysis: FeatureAnalysis[];
   suggestions: string[];
   image_url: string;
+}
+
+// FIX: Added missing User interface.
+export interface User {
+  id: string;
+  email?: string;
 }
