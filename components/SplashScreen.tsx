@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 
 interface SplashScreenProps {
@@ -7,7 +8,7 @@ interface SplashScreenProps {
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onEnter }) => {
     // آدرس تصویر پس‌زمینه با یک تصویر با کیفیت بالا و سریع از یک CDN معتبر جایگزین شد
-    const backgroundImageUrl = 'https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2';
+    const backgroundImageUrl = 'http://diginoron.com/wp-content/uploads/2025/10/pexels-photo-247204-scaled.jpeg';
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center text-white animate-fade-in relative overflow-hidden">
