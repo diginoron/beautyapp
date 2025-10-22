@@ -17,18 +17,11 @@ import HistoryFlow from './components/HistoryFlow';
 import Menu from './components/Menu';
 import AuthFlow from './components/AuthFlow';
 import SplashScreen from './components/SplashScreen';
-import { supabase, isSupabaseConfigured } from './services/supabase';
-import ConfigurationError from './components/ConfigurationError';
+import { supabase } from './services/supabase';
 import { resizeImageFromFile, resizeImageFromDataUrl } from './services/imageUtils';
 
 
 const App: React.FC = () => {
-    // Check if Supabase credentials have been set by the user.
-    // If not, render an error screen with instructions.
-    if (!isSupabaseConfigured) {
-        return <ConfigurationError />;
-    }
-
     const [showSplash, setShowSplash] = useState<boolean>(true);
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
