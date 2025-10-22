@@ -1,15 +1,13 @@
 import React from 'react';
-import { HomeIcon, CloseIcon, LogoutIcon, HistoryIcon } from './icons';
+import { HomeIcon, CloseIcon } from './icons';
 
 interface MenuProps {
     isOpen: boolean;
     onClose: () => void;
     onGoHome: () => void;
-    onGoToHistory: () => void;
-    onLogout: () => void;
 }
 
-const Menu: React.FC<MenuProps> = ({ isOpen, onClose, onGoHome, onGoToHistory, onLogout }) => {
+const Menu: React.FC<MenuProps> = ({ isOpen, onClose, onGoHome }) => {
     return (
         <>
             {/* Overlay */}
@@ -49,29 +47,8 @@ const Menu: React.FC<MenuProps> = ({ isOpen, onClose, onGoHome, onGoToHistory, o
                                     <span>صفحه نخست</span>
                                 </button>
                             </li>
-                             <li className="mb-4">
-                                <button
-                                    onClick={() => {
-                                        onGoToHistory();
-                                        onClose();
-                                    }}
-                                    className="w-full flex items-center p-2 text-slate-700 rounded-md hover:bg-slate-100 transition-colors"
-                                >
-                                    <HistoryIcon className="w-5 h-5 ml-3" />
-                                    <span>سابقه تحلیل‌ها</span>
-                                </button>
-                            </li>
                         </ul>
                     </nav>
-                     <div className="mt-auto">
-                        <button
-                            onClick={onLogout}
-                            className="w-full flex items-center p-2 text-red-600 rounded-md hover:bg-red-50 transition-colors"
-                        >
-                            <LogoutIcon className="w-5 h-5 ml-3" />
-                            <span>خروج از حساب</span>
-                        </button>
-                    </div>
                 </div>
             </div>
         </>
