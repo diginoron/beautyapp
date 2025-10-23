@@ -1,18 +1,20 @@
 import React, { useState, useCallback } from 'react';
 import { getColorHarmonySuggestions } from '../services/geminiService';
-import type { ColorHarmonyResult } from '../types';
+import type { ColorHarmonyResult, User } from '../types';
+import { checkUserStatus, deductTokens, incrementUsageCount } from '../services/profileService';
 import ImageInput from './ImageInput';
 import Spinner from './Spinner';
 import ColorHarmonyDisplay from './ColorHarmonyDisplay';
 
 interface ColorHarmonyFlowProps {
+    currentUser: User;
     onBack: () => void;
     onTokensUsed: (count: number) => void;
 }
 
 type ImageData = { base64: string; preview: string; } | null;
 
-const ColorHarmonyFlow: React.FC<ColorHarmonyFlowProps> = ({ onBack, onTokensUsed }) => {
+const ColorHarmonyFlow: React.FC<ColorHarmonyFlowProps> = ({ currentUser, onBack, onTokensUsed }) => {
     const [image, setImage] = useState<ImageData>(null);
     const [result, setResult] = useState<ColorHarmonyResult | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -28,8 +30,17 @@ const ColorHarmonyFlow: React.FC<ColorHarmonyFlowProps> = ({ onBack, onTokensUse
         setResult(null);
 
         try {
+            const status = await checkUserStatus(currentUser.id);
+            if (!status.canProceed) {
+                setError(status.message);
+                setIsLoading(false);
+                return;
+            }
+
             const { data: apiResult, totalTokens } = await getColorHarmonySuggestions(image.base64);
             onTokensUsed(totalTokens);
+            await deductTokens(currentUser.id, totalTokens);
+            await incrementUsageCount(currentUser.id);
             
             if (apiResult.isValidFace) {
                 setResult(apiResult);
@@ -38,11 +49,15 @@ const ColorHarmonyFlow: React.FC<ColorHarmonyFlowProps> = ({ onBack, onTokensUse
             }
         } catch (err) {
             console.error("Color harmony suggestions error:", String(err));
-            setError('خطایی در هنگام دریافت پیشنهادات رنگ رخ داد. لطفاً دوباره تلاش کنید.');
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('خطایی در هنگام دریافت پیشنهادات رنگ رخ داد. لطفاً دوباره تلاش کنید.');
+            }
         } finally {
             setIsLoading(false);
         }
-    }, [image, onTokensUsed]);
+    }, [image, onTokensUsed, currentUser.id]);
 
     const handleReset = () => {
         setImage(null);

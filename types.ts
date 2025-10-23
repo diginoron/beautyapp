@@ -58,3 +58,10 @@ export interface User {
   id: string;
   email?: string;
 }
+
+export interface Profile {
+    id: string;
+    usage_count: number;
+    last_reset: string;
+    token_balance: number;
+}

@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { findNearbySalons } from '../services/geminiService';
-import type { Salon } from '../types';
+import type { Salon, User } from '../types';
+import { checkUserStatus, deductTokens, incrementUsageCount } from '../services/profileService';
 import Spinner from './Spinner';
 import { GpsIcon, MapPinIcon } from './icons';
 
 interface SalonFinderFlowProps {
+    currentUser: User;
     onBack: () => void;
     onTokensUsed: (count: number) => void;
 }
@@ -42,7 +44,7 @@ const SalonCard: React.FC<{ salon: Salon }> = ({ salon }) => (
 );
 
 
-const SalonFinderFlow: React.FC<SalonFinderFlowProps> = ({ onBack, onTokensUsed }) => {
+const SalonFinderFlow: React.FC<SalonFinderFlowProps> = ({ currentUser, onBack, onTokensUsed }) => {
     const [view, setView] = useState<'input' | 'loading' | 'results'>('input');
     const [salons, setSalons] = useState<Salon[] | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -54,8 +56,18 @@ const SalonFinderFlow: React.FC<SalonFinderFlowProps> = ({ onBack, onTokensUsed 
         setError(null);
         setSalons(null);
         try {
+            const status = await checkUserStatus(currentUser.id);
+            if (!status.canProceed) {
+                setError(status.message);
+                setView('input');
+                return;
+            }
+
             const { data: results, totalTokens } = await findNearbySalons(locationQuery);
             onTokensUsed(totalTokens);
+            await deductTokens(currentUser.id, totalTokens);
+            await incrementUsageCount(currentUser.id);
+
 
             if (results && results.length > 0) {
                 setSalons(results);
@@ -66,10 +78,14 @@ const SalonFinderFlow: React.FC<SalonFinderFlowProps> = ({ onBack, onTokensUsed 
             }
         } catch (err) {
             console.error("Salon finder error:", String(err));
-            setError('خطایی در ارتباط با سرویس رخ داد. لطفاً دوباره تلاش کنید.');
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('خطایی در ارتباط با سرویس رخ داد. لطفاً دوباره تلاش کنید.');
+            }
             setView('input');
         }
-    }, [onTokensUsed]);
+    }, [onTokensUsed, currentUser.id]);
 
     const handleGpsSearch = () => {
         if (!navigator.geolocation) {

@@ -1,11 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import { analyzeImage } from '../services/geminiService';
-import type { AnalysisResult } from '../types';
+import type { AnalysisResult, User } from '../types';
+import { checkUserStatus, deductTokens, incrementUsageCount } from '../services/profileService';
 import ImageInput from './ImageInput';
 import Spinner from './Spinner';
 import ComparisonDisplay from './ComparisonDisplay';
 
 interface ComparisonFlowProps {
+    currentUser: User;
     onBack: () => void;
     onTokensUsed: (count: number) => void;
 }
@@ -15,7 +17,7 @@ type ImageData = {
     preview: string;
 } | null;
 
-const ComparisonFlow: React.FC<ComparisonFlowProps> = ({ onBack, onTokensUsed }) => {
+const ComparisonFlow: React.FC<ComparisonFlowProps> = ({ currentUser, onBack, onTokensUsed }) => {
     const [image1, setImage1] = useState<ImageData>(null);
     const [image2, setImage2] = useState<ImageData>(null);
     const [analysis1, setAnalysis1] = useState<AnalysisResult | null>(null);
@@ -34,12 +36,26 @@ const ComparisonFlow: React.FC<ComparisonFlowProps> = ({ onBack, onTokensUsed })
         setAnalysis2(null);
 
         try {
+            // Check user status before proceeding
+            const status = await checkUserStatus(currentUser.id);
+            if (!status.canProceed) {
+                setError(status.message);
+                setIsLoading(false);
+                return;
+            }
+
             const [res1, res2] = await Promise.all([
                 analyzeImage(image1.base64),
                 analyzeImage(image2.base64),
             ]);
             
-            onTokensUsed(res1.totalTokens + res2.totalTokens);
+            const totalTokens = res1.totalTokens + res2.totalTokens;
+            onTokensUsed(totalTokens);
+            await deductTokens(currentUser.id, totalTokens);
+            // Increment usage for each successful analysis
+            await incrementUsageCount(currentUser.id);
+            await incrementUsageCount(currentUser.id);
+
 
             const result1 = res1.data;
             const result2 = res2.data;
@@ -61,11 +77,15 @@ const ComparisonFlow: React.FC<ComparisonFlowProps> = ({ onBack, onTokensUsed })
 
         } catch (err) {
             console.error("Comparison analysis error:", String(err));
-            setError('خطایی در هنگام تحلیل تصاویر رخ داد. لطفاً دوباره تلاش کنید.');
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                 setError('خطایی در هنگام تحلیل تصاویر رخ داد. لطفاً دوباره تلاش کنید.');
+            }
         } finally {
             setIsLoading(false);
         }
-    }, [image1, image2, onTokensUsed]);
+    }, [image1, image2, onTokensUsed, currentUser.id]);
     
     const handleReset = () => {
         setImage1(null);

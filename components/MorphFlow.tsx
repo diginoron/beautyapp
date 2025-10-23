@@ -1,18 +1,20 @@
 import React, { useState, useCallback } from 'react';
 import { getMorphSuggestions } from '../services/geminiService';
-import type { MorphResult } from '../types';
+import type { MorphResult, User } from '../types';
+import { checkUserStatus, deductTokens, incrementUsageCount } from '../services/profileService';
 import ImageInput from './ImageInput';
 import Spinner from './Spinner';
 import MorphDisplay from './MorphDisplay';
 
 interface MorphFlowProps {
+    currentUser: User;
     onBack: () => void;
     onTokensUsed: (count: number) => void;
 }
 
 type ImageData = { base64: string; preview: string; } | null;
 
-const MorphFlow: React.FC<MorphFlowProps> = ({ onBack, onTokensUsed }) => {
+const MorphFlow: React.FC<MorphFlowProps> = ({ currentUser, onBack, onTokensUsed }) => {
     const [sourceImage, setSourceImage] = useState<ImageData>(null);
     const [targetImage, setTargetImage] = useState<ImageData>(null);
     const [result, setResult] = useState<MorphResult | null>(null);
@@ -29,8 +31,17 @@ const MorphFlow: React.FC<MorphFlowProps> = ({ onBack, onTokensUsed }) => {
         setResult(null);
 
         try {
+            const status = await checkUserStatus(currentUser.id);
+            if (!status.canProceed) {
+                setError(status.message);
+                setIsLoading(false);
+                return;
+            }
+            
             const { data: apiResult, totalTokens } = await getMorphSuggestions(sourceImage.base64, targetImage.base64);
             onTokensUsed(totalTokens);
+            await deductTokens(currentUser.id, totalTokens);
+            await incrementUsageCount(currentUser.id);
             
             if (apiResult.isValid) {
                 setResult(apiResult);
@@ -39,11 +50,15 @@ const MorphFlow: React.FC<MorphFlowProps> = ({ onBack, onTokensUsed }) => {
             }
         } catch (err) {
             console.error("Morph suggestions error:", String(err));
-            setError('خطایی در هنگام دریافت پیشنهادات رخ داد. لطفاً دوباره تلاش کنید.');
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('خطایی در هنگام دریافت پیشنهادات رخ داد. لطفاً دوباره تلاش کنید.');
+            }
         } finally {
             setIsLoading(false);
         }
-    }, [sourceImage, targetImage, onTokensUsed]);
+    }, [sourceImage, targetImage, onTokensUsed, currentUser.id]);
 
     const handleReset = () => {
         setSourceImage(null);

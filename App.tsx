@@ -4,6 +4,7 @@ import type { AnalysisResult, User } from './types';
 import { analyzeImage } from './services/geminiService';
 import { supabase } from './services/supabase';
 import { saveAnalysis } from './services/historyService';
+import { checkUserStatus, incrementUsageCount, deductTokens, USAGE_LIMIT } from './services/profileService';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ImageUploader from './components/ImageUploader';
@@ -39,6 +40,8 @@ const App: React.FC = () => {
     
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [totalTokensUsed, setTotalTokensUsed] = useState<number>(0);
+    const [currentUsage, setCurrentUsage] = useState<number>(0);
+    const [tokenBalance, setTokenBalance] = useState<number>(0);
 
     useEffect(() => {
         const getInitialSession = async () => {
@@ -56,6 +59,19 @@ const App: React.FC = () => {
 
         return () => subscription.unsubscribe();
     }, []);
+
+    const fetchUserStatus = useCallback(async () => {
+        if (currentUser) {
+            const { currentUsage, tokenBalance } = await checkUserStatus(currentUser.id);
+            setCurrentUsage(currentUsage);
+            setTokenBalance(tokenBalance);
+        }
+    }, [currentUser]);
+
+    useEffect(() => {
+        fetchUserStatus();
+    }, [fetchUserStatus]);
+
 
     const handleImageUpload = async (file: File) => {
         setIsLoading(true);
@@ -91,21 +107,40 @@ const App: React.FC = () => {
     };
     
     const handleAnalyzeClick = useCallback(async () => {
-        if (!imageBase64) {
+        if (!imageBase64 || !currentUser) {
             setError('لطفاً ابتدا یک تصویر را انتخاب کنید.');
             return;
         }
+
         setIsLoading(true);
         setError(null);
         setAnalysis(null);
-        setHistorySaveError(null); // Clear previous history save errors
+        setHistorySaveError(null);
+
+        // Check usage limit and token balance before calling the API
+        const status = await checkUserStatus(currentUser.id);
+        setCurrentUsage(status.currentUsage);
+        setTokenBalance(status.tokenBalance);
+
+        if (!status.canProceed) {
+            setError(status.message);
+            setIsLoading(false);
+            return;
+        }
 
         try {
             const { data: result, totalTokens } = await analyzeImage(imageBase64);
             setTotalTokensUsed(prev => prev + totalTokens);
+             // Deduct tokens on successful analysis
+            await deductTokens(currentUser.id, totalTokens);
+            setTokenBalance(prev => prev - totalTokens);
             
             if(result.isValidFace) {
                  setAnalysis(result);
+                 // Increment daily usage count on successful analysis
+                 await incrementUsageCount(currentUser.id);
+                 setCurrentUsage(prev => prev + 1);
+
                  if (currentUser) {
                     saveAnalysis(currentUser.id, result, imageBase64).catch(err => {
                         console.error("Failed to save analysis to history:", err);
@@ -147,6 +182,7 @@ const App: React.FC = () => {
         setShowCamera(false);
         setMode('initial');
         setHistorySaveError(null);
+        fetchUserStatus(); // Refresh usage and token balance on reset
     };
     
     const handleSingleModeReset = () => {
@@ -172,6 +208,8 @@ const App: React.FC = () => {
 
     const handleTokensUsed = (count: number) => {
         setTotalTokensUsed(prev => prev + count);
+         // Also update the main token balance immediately for better UX
+        setTokenBalance(prev => prev - count);
     };
     
     if (showSplash) {
@@ -184,7 +222,7 @@ const App: React.FC = () => {
 
     return (
         <div className="min-h-screen flex flex-col font-sans animate-fade-in">
-            <Header onMenuToggle={handleMenuToggle} totalTokensUsed={totalTokensUsed} />
+            <Header onMenuToggle={handleMenuToggle} totalTokensUsed={totalTokensUsed} currentUsage={currentUsage} usageLimit={USAGE_LIMIT} tokenBalance={tokenBalance} />
             <Menu 
                 isOpen={isMenuOpen}
                 onClose={() => setIsMenuOpen(false)}
@@ -262,10 +300,10 @@ const App: React.FC = () => {
                         </>
                     )}
 
-                    {mode === 'compare' && <ComparisonFlow onBack={handleReset} onTokensUsed={handleTokensUsed} />}
-                    {mode === 'morph' && <MorphFlow onBack={handleReset} onTokensUsed={handleTokensUsed} />}
-                    {mode === 'color' && <ColorHarmonyFlow onBack={handleReset} onTokensUsed={handleTokensUsed} />}
-                    {mode === 'salonFinder' && <SalonFinderFlow onBack={handleReset} onTokensUsed={handleTokensUsed} />}
+                    {mode === 'compare' && <ComparisonFlow currentUser={currentUser} onBack={handleReset} onTokensUsed={handleTokensUsed} />}
+                    {mode === 'morph' && <MorphFlow currentUser={currentUser} onBack={handleReset} onTokensUsed={handleTokensUsed} />}
+                    {mode === 'color' && <ColorHarmonyFlow currentUser={currentUser} onBack={handleReset} onTokensUsed={handleTokensUsed} />}
+                    {mode === 'salonFinder' && <SalonFinderFlow currentUser={currentUser} onBack={handleReset} onTokensUsed={handleTokensUsed} />}
                     {mode === 'history' && <HistoryFlow currentUser={currentUser} onBack={handleReset} />}
                 </div>
             </main>
