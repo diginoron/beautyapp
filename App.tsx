@@ -222,7 +222,7 @@ const App: React.FC = () => {
 
     return (
         <div className="min-h-screen flex flex-col font-sans animate-fade-in">
-            <Header onMenuToggle={handleMenuToggle} totalTokensUsed={totalTokensUsed} currentUsage={currentUsage} usageLimit={USAGE_LIMIT} tokenBalance={tokenBalance} />
+            <Header onMenuToggle={handleMenuToggle} totalTokensUsed={totalTokensUsed} tokenBalance={tokenBalance} />
             <Menu 
                 isOpen={isMenuOpen}
                 onClose={() => setIsMenuOpen(false)}
