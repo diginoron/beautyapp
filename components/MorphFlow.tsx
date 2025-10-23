@@ -7,11 +7,12 @@ import MorphDisplay from './MorphDisplay';
 
 interface MorphFlowProps {
     onBack: () => void;
+    onTokensUsed: (count: number) => void;
 }
 
 type ImageData = { base64: string; preview: string; } | null;
 
-const MorphFlow: React.FC<MorphFlowProps> = ({ onBack }) => {
+const MorphFlow: React.FC<MorphFlowProps> = ({ onBack, onTokensUsed }) => {
     const [sourceImage, setSourceImage] = useState<ImageData>(null);
     const [targetImage, setTargetImage] = useState<ImageData>(null);
     const [result, setResult] = useState<MorphResult | null>(null);
@@ -28,7 +29,9 @@ const MorphFlow: React.FC<MorphFlowProps> = ({ onBack }) => {
         setResult(null);
 
         try {
-            const apiResult = await getMorphSuggestions(sourceImage.base64, targetImage.base64);
+            const { data: apiResult, totalTokens } = await getMorphSuggestions(sourceImage.base64, targetImage.base64);
+            onTokensUsed(totalTokens);
+            
             if (apiResult.isValid) {
                 setResult(apiResult);
             } else {
@@ -40,7 +43,7 @@ const MorphFlow: React.FC<MorphFlowProps> = ({ onBack }) => {
         } finally {
             setIsLoading(false);
         }
-    }, [sourceImage, targetImage]);
+    }, [sourceImage, targetImage, onTokensUsed]);
 
     const handleReset = () => {
         setSourceImage(null);

@@ -6,6 +6,7 @@ import { GpsIcon, MapPinIcon } from './icons';
 
 interface SalonFinderFlowProps {
     onBack: () => void;
+    onTokensUsed: (count: number) => void;
 }
 
 const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
@@ -41,7 +42,7 @@ const SalonCard: React.FC<{ salon: Salon }> = ({ salon }) => (
 );
 
 
-const SalonFinderFlow: React.FC<SalonFinderFlowProps> = ({ onBack }) => {
+const SalonFinderFlow: React.FC<SalonFinderFlowProps> = ({ onBack, onTokensUsed }) => {
     const [view, setView] = useState<'input' | 'loading' | 'results'>('input');
     const [salons, setSalons] = useState<Salon[] | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -53,7 +54,9 @@ const SalonFinderFlow: React.FC<SalonFinderFlowProps> = ({ onBack }) => {
         setError(null);
         setSalons(null);
         try {
-            const results = await findNearbySalons(locationQuery);
+            const { data: results, totalTokens } = await findNearbySalons(locationQuery);
+            onTokensUsed(totalTokens);
+
             if (results && results.length > 0) {
                 setSalons(results);
                 setView('results');
@@ -66,7 +69,7 @@ const SalonFinderFlow: React.FC<SalonFinderFlowProps> = ({ onBack }) => {
             setError('خطایی در ارتباط با سرویس رخ داد. لطفاً دوباره تلاش کنید.');
             setView('input');
         }
-    }, []);
+    }, [onTokensUsed]);
 
     const handleGpsSearch = () => {
         if (!navigator.geolocation) {

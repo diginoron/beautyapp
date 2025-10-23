@@ -19,10 +19,10 @@ const getAiInstance = () => {
  * @param model The Gemini model to use.
  * @param contents The contents to send to the model.
  * @param generationConfig The generation configuration.
- * @returns A promise that resolves with the parsed JSON object.
+ * @returns A promise that resolves with the parsed JSON object and the total tokens used.
  * @throws Throws a user-friendly error on failure.
  */
-async function callGeminiAndParseJson<T>(model: string, contents: any, generationConfig: any): Promise<T> {
+async function callGeminiAndParseJson<T>(model: string, contents: any, generationConfig: any): Promise<{ data: T; totalTokens: number }> {
     try {
         const ai = getAiInstance();
         
@@ -31,13 +31,16 @@ async function callGeminiAndParseJson<T>(model: string, contents: any, generatio
             contents,
             config: generationConfig,
         });
-
+        
+        const totalTokens = response.usageMetadata?.totalTokenCount ?? 0;
         const jsonText = response.text.trim();
+
         if (!jsonText) {
             throw new Error("پاسخ خالی از هوش مصنوعی دریافت شد.");
         }
         
-        return JSON.parse(jsonText) as T;
+        const data = JSON.parse(jsonText) as T;
+        return { data, totalTokens };
         
     } catch (err) {
         console.error("Gemini API Error:", err);
@@ -57,7 +60,7 @@ async function callGeminiAndParseJson<T>(model: string, contents: any, generatio
     }
 }
 
-export const analyzeImage = (base64Image: string): Promise<AnalysisResult> => {
+export const analyzeImage = async (base64Image: string): Promise<{ data: AnalysisResult; totalTokens: number }> => {
     const prompt = `
         شما یک هوش مصنوعی متخصص زیبایی‌شناسی هستید. وظیفه شما ارائه یک تحلیل چهره مثبت، محترمانه و سازنده است.
         تصویر چهره ارسالی توسط کاربر را بر اساس اصول هماهنگی، تقارن و وضوح چهره تحلیل کنید.
@@ -82,10 +85,10 @@ export const analyzeImage = (base64Image: string): Promise<AnalysisResult> => {
         responseMimeType: "application/json",
     };
 
-    return callGeminiAndParseJson('gemini-2.5-flash', contents, generationConfig);
+    return await callGeminiAndParseJson<AnalysisResult>('gemini-2.5-flash', contents, generationConfig);
 };
 
-export const getMorphSuggestions = (sourceImageBase64: string, targetImageBase64: string): Promise<MorphResult> => {
+export const getMorphSuggestions = async (sourceImageBase64: string, targetImageBase64: string): Promise<{ data: MorphResult; totalTokens: number }> => {
     const prompt = `
         شما یک مشاور زیبایی حرفه‌ای و متخصص هوش مصنوعی هستید. وظیفه شما مقایسه دقیق دو چهره (چهره مبدا و چهره هدف) و ارائه پیشنهادات مشخص و کاربردی است تا چهره مبدا به چهره هدف شبیه‌تر شود. تمرکز مطلقاً بر روش‌های غیرتهاجمی است.
         دستورالعمل‌های دقیق:
@@ -109,10 +112,10 @@ export const getMorphSuggestions = (sourceImageBase64: string, targetImageBase64
         responseMimeType: "application/json",
     };
 
-    return callGeminiAndParseJson('gemini-2.5-flash', contents, generationConfig);
+    return await callGeminiAndParseJson<MorphResult>('gemini-2.5-flash', contents, generationConfig);
 };
 
-export const getColorHarmonySuggestions = (base64Image: string): Promise<ColorHarmonyResult> => {
+export const getColorHarmonySuggestions = async (base64Image: string): Promise<{ data: ColorHarmonyResult; totalTokens: number }> => {
     const prompt = `
         شما یک هوش مصنوعی متخصص در تئوری رنگ و استایلیست شخصی هستید. وظیفه شما تحلیل دقیق چهره در تصویر ارسالی و ارائه پیشنهادهای هماهنگی رنگ است.
         دستورالعمل‌ها:
@@ -136,10 +139,10 @@ export const getColorHarmonySuggestions = (base64Image: string): Promise<ColorHa
         responseMimeType: "application/json",
     };
     
-    return callGeminiAndParseJson('gemini-2.5-flash', contents, generationConfig);
+    return await callGeminiAndParseJson<ColorHarmonyResult>('gemini-2.5-flash', contents, generationConfig);
 };
 
-export const findNearbySalons = async (locationQuery: string): Promise<Salon[]> => {
+export const findNearbySalons = async (locationQuery: string): Promise<{ data: Salon[]; totalTokens: number }> => {
     const prompt = `
         شما یک دستیار جستجوی محلی هستید. وظیفه شما یافتن ۱۰ مورد از برترین سالن‌های زیبایی زنانه بر اساس موقعیت مکانی کاربر ("${locationQuery}") است.
         این لیست باید بر اساس بالاترین امتیاز کاربران در گوگل مپ مرتب شود (از بیشترین به کمترین).
@@ -153,11 +156,11 @@ export const findNearbySalons = async (locationQuery: string): Promise<Salon[]> 
         responseMimeType: "application/json",
     };
 
-    const result = await callGeminiAndParseJson<Salon[]>('gemini-2.5-flash', contents, generationConfig);
+    const { data: result, totalTokens } = await callGeminiAndParseJson<Salon[]>('gemini-2.5-flash', contents, generationConfig);
 
     // Sort again on the client-side to ensure correct order
     if (Array.isArray(result)) {
         result.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     }
-    return result;
+    return { data: result, totalTokens };
 };

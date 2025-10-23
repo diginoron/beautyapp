@@ -30,6 +30,10 @@ export const saveAnalysis = async (userId: string, result: AnalysisResult, base6
             .upload(filePath, imageBlob);
 
         if (uploadError) {
+            // Re-throw specific "Bucket not found" errors to provide clearer feedback.
+            if (uploadError.message.includes('Bucket not found')) {
+                 throw new Error("سطل ذخیره‌سازی 'analysis-images' یافت نشد. لطفاً از ایجاد آن در پنل Supabase خود اطمینان حاصل کنید.");
+            }
             throw new Error(`Image upload failed: ${uploadError.message}`);
         }
 
@@ -50,8 +54,8 @@ export const saveAnalysis = async (userId: string, result: AnalysisResult, base6
 
     } catch (error) {
         console.error("Error saving analysis:", error);
-        // In a real app, you might want to notify the user of the failure.
-        // For now, we just log it to avoid crashing the user experience.
+        // Propagate the error to be handled by the UI component.
+        throw error;
     }
 };
 

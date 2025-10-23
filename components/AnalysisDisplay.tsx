@@ -8,6 +8,7 @@ interface AnalysisDisplayProps {
     imagePreview: string;
     onReset?: () => void;
     onBack?: () => void;
+    historySaveError?: string | null;
 }
 
 const ScoreCircle: React.FC<{ score: number }> = ({ score }) => {
@@ -57,12 +58,18 @@ const FeatureCard: React.FC<{ item: FeatureAnalysis }> = ({ item }) => (
 );
 
 
-const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result, imagePreview, onReset, onBack }) => {
+const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result, imagePreview, onReset, onBack, historySaveError }) => {
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
     return (
         <>
             <div className="animate-fade-in space-y-8">
+                {historySaveError && (
+                    <div className="p-4 mb-6 bg-yellow-100 border border-yellow-300 rounded-lg text-center" role="alert">
+                        <p className="text-yellow-800 font-semibold">توجه</p>
+                        <p className="text-yellow-700 text-sm font-light">{historySaveError}</p>
+                    </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
                     <div className="md:col-span-1 flex flex-col items-center text-center">
                         <img src={imagePreview} alt="Analyzed face" className="w-48 h-48 object-cover rounded-full shadow-lg border-4 border-slate-300 mb-4"/>

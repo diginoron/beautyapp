@@ -7,6 +7,7 @@ import ComparisonDisplay from './ComparisonDisplay';
 
 interface ComparisonFlowProps {
     onBack: () => void;
+    onTokensUsed: (count: number) => void;
 }
 
 type ImageData = {
@@ -14,7 +15,7 @@ type ImageData = {
     preview: string;
 } | null;
 
-const ComparisonFlow: React.FC<ComparisonFlowProps> = ({ onBack }) => {
+const ComparisonFlow: React.FC<ComparisonFlowProps> = ({ onBack, onTokensUsed }) => {
     const [image1, setImage1] = useState<ImageData>(null);
     const [image2, setImage2] = useState<ImageData>(null);
     const [analysis1, setAnalysis1] = useState<AnalysisResult | null>(null);
@@ -33,10 +34,15 @@ const ComparisonFlow: React.FC<ComparisonFlowProps> = ({ onBack }) => {
         setAnalysis2(null);
 
         try {
-            const [result1, result2] = await Promise.all([
+            const [res1, res2] = await Promise.all([
                 analyzeImage(image1.base64),
                 analyzeImage(image2.base64),
             ]);
+            
+            onTokensUsed(res1.totalTokens + res2.totalTokens);
+
+            const result1 = res1.data;
+            const result2 = res2.data;
 
             let errors: string[] = [];
             if (!result1.isValidFace) {
@@ -59,7 +65,7 @@ const ComparisonFlow: React.FC<ComparisonFlowProps> = ({ onBack }) => {
         } finally {
             setIsLoading(false);
         }
-    }, [image1, image2]);
+    }, [image1, image2, onTokensUsed]);
     
     const handleReset = () => {
         setImage1(null);

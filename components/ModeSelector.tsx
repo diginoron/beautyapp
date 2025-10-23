@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { FaceIcon, UsersIcon, FaceMagicIcon, PaletteIcon, MapPinIcon, HistoryIcon } from './icons';
 
@@ -54,7 +55,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
             >
                 <HistoryIcon className="w-10 h-10 text-purple-500 mb-2" />
                 <span className="text-lg font-semibold text-slate-800 text-center">سابقه تحلیل‌ها</span>
-                <p className="text-xs text-slate-500 mt-1 text-center font-light">مشاهده نتایج تحلیل‌های گذشته شما.</p>
+                <p className="text-xs text-slate-500 mt-1 text-center font-light">مشاهده نتایج تحلیل‌های گذشته.</p>
             </button>
         </div>
     );

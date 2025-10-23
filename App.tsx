@@ -35,8 +35,10 @@ const App: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [showCamera, setShowCamera] = useState<boolean>(false);
+    const [historySaveError, setHistorySaveError] = useState<string | null>(null);
     
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [totalTokensUsed, setTotalTokensUsed] = useState<number>(0);
 
     useEffect(() => {
         const getInitialSession = async () => {
@@ -96,15 +98,29 @@ const App: React.FC = () => {
         setIsLoading(true);
         setError(null);
         setAnalysis(null);
+        setHistorySaveError(null); // Clear previous history save errors
 
         try {
-            const result = await analyzeImage(imageBase64);
+            const { data: result, totalTokens } = await analyzeImage(imageBase64);
+            setTotalTokensUsed(prev => prev + totalTokens);
+            
             if(result.isValidFace) {
                  setAnalysis(result);
                  if (currentUser) {
                     saveAnalysis(currentUser.id, result, imageBase64).catch(err => {
                         console.error("Failed to save analysis to history:", err);
-                        // This is a non-critical error, so we don't show it to the user
+                        // Show a non-blocking warning to the user if saving fails
+                        if (err instanceof Error) {
+                            if (err.message.includes("Bucket not found")) {
+                                setHistorySaveError("تحلیل شما ذخیره نشد: سطل ذخیره‌سازی تصاویر یافت نشد.");
+                            } else if (err.message.includes("violates row-level security policy")) {
+                                setHistorySaveError("تحلیل شما ذخیره نشد: به دلیل خطای امنیتی پایگاه داده. لطفاً از اعمال پالیسی‌های RLS اطمینان حاصل کنید.");
+                            } else {
+                                setHistorySaveError("تحلیل شما در سابقه ذخیره نشد: خطایی ناشناخته رخ داد.");
+                            }
+                        } else {
+                            setHistorySaveError("تحلیل شما در سابقه ذخیره نشد: خطایی ناشناخته رخ داد.");
+                        }
                     });
                  }
             } else {
@@ -130,6 +146,7 @@ const App: React.FC = () => {
         setIsLoading(false);
         setShowCamera(false);
         setMode('initial');
+        setHistorySaveError(null);
     };
     
     const handleSingleModeReset = () => {
@@ -139,6 +156,7 @@ const App: React.FC = () => {
         setError(null);
         setIsLoading(false);
         setShowCamera(false);
+        setHistorySaveError(null);
     }
     
     const handleMenuToggle = () => {
@@ -151,6 +169,10 @@ const App: React.FC = () => {
         setIsMenuOpen(false);
         handleReset();
     };
+
+    const handleTokensUsed = (count: number) => {
+        setTotalTokensUsed(prev => prev + count);
+    };
     
     if (showSplash) {
         return <SplashScreen onEnter={() => setShowSplash(false)} />;
@@ -162,7 +184,7 @@ const App: React.FC = () => {
 
     return (
         <div className="min-h-screen flex flex-col font-sans animate-fade-in">
-            <Header onMenuToggle={handleMenuToggle} />
+            <Header onMenuToggle={handleMenuToggle} totalTokensUsed={totalTokensUsed} />
             <Menu 
                 isOpen={isMenuOpen}
                 onClose={() => setIsMenuOpen(false)}
@@ -235,15 +257,15 @@ const App: React.FC = () => {
                             )}
 
                             {analysis && (
-                                <AnalysisDisplay result={analysis} imagePreview={imagePreview!} onReset={handleReset} />
+                                <AnalysisDisplay result={analysis} imagePreview={imagePreview!} onReset={handleReset} historySaveError={historySaveError} />
                             )}
                         </>
                     )}
 
-                    {mode === 'compare' && <ComparisonFlow onBack={handleReset} />}
-                    {mode === 'morph' && <MorphFlow onBack={handleReset} />}
-                    {mode === 'color' && <ColorHarmonyFlow onBack={handleReset} />}
-                    {mode === 'salonFinder' && <SalonFinderFlow onBack={handleReset} />}
+                    {mode === 'compare' && <ComparisonFlow onBack={handleReset} onTokensUsed={handleTokensUsed} />}
+                    {mode === 'morph' && <MorphFlow onBack={handleReset} onTokensUsed={handleTokensUsed} />}
+                    {mode === 'color' && <ColorHarmonyFlow onBack={handleReset} onTokensUsed={handleTokensUsed} />}
+                    {mode === 'salonFinder' && <SalonFinderFlow onBack={handleReset} onTokensUsed={handleTokensUsed} />}
                     {mode === 'history' && <HistoryFlow currentUser={currentUser} onBack={handleReset} />}
                 </div>
             </main>

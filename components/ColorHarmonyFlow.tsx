@@ -7,11 +7,12 @@ import ColorHarmonyDisplay from './ColorHarmonyDisplay';
 
 interface ColorHarmonyFlowProps {
     onBack: () => void;
+    onTokensUsed: (count: number) => void;
 }
 
 type ImageData = { base64: string; preview: string; } | null;
 
-const ColorHarmonyFlow: React.FC<ColorHarmonyFlowProps> = ({ onBack }) => {
+const ColorHarmonyFlow: React.FC<ColorHarmonyFlowProps> = ({ onBack, onTokensUsed }) => {
     const [image, setImage] = useState<ImageData>(null);
     const [result, setResult] = useState<ColorHarmonyResult | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -27,7 +28,9 @@ const ColorHarmonyFlow: React.FC<ColorHarmonyFlowProps> = ({ onBack }) => {
         setResult(null);
 
         try {
-            const apiResult = await getColorHarmonySuggestions(image.base64);
+            const { data: apiResult, totalTokens } = await getColorHarmonySuggestions(image.base64);
+            onTokensUsed(totalTokens);
+            
             if (apiResult.isValidFace) {
                 setResult(apiResult);
             } else {
@@ -39,7 +42,7 @@ const ColorHarmonyFlow: React.FC<ColorHarmonyFlowProps> = ({ onBack }) => {
         } finally {
             setIsLoading(false);
         }
-    }, [image]);
+    }, [image, onTokensUsed]);
 
     const handleReset = () => {
         setImage(null);
