@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { analyzeImage } from '../services/geminiService';
+import { callAvalAIProxy } from '../services/avalaiProxyService'; // Use new proxy service
 import type { AnalysisResult, User } from '../types';
 import { checkUserStatus, deductTokens, incrementUsageCount } from '../services/profileService';
 import ImageInput from './ImageInput';
@@ -45,8 +45,8 @@ const ComparisonFlow: React.FC<ComparisonFlowProps> = ({ currentUser, onBack, on
             }
 
             const [res1, res2] = await Promise.all([
-                analyzeImage(image1.base64),
-                analyzeImage(image2.base64),
+                callAvalAIProxy<{ data: AnalysisResult; totalTokens: number }>('analyzeImage', { base64Image: image1.base64 }),
+                callAvalAIProxy<{ data: AnalysisResult; totalTokens: number }>('analyzeImage', { base64Image: image2.base64 }),
             ]);
             
             const totalTokens = res1.totalTokens + res2.totalTokens;

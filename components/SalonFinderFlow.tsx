@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { findNearbySalons } from '../services/geminiService';
+import { callAvalAIProxy } from '../services/avalaiProxyService'; // Use new proxy service
 import type { Salon, User } from '../types';
 import { checkUserStatus, deductTokens, incrementUsageCount } from '../services/profileService';
 import Spinner from './Spinner';
@@ -63,12 +63,14 @@ const SalonFinderFlow: React.FC<SalonFinderFlowProps> = ({ currentUser, onBack, 
                 return;
             }
 
-            const { data: results, totalTokens } = await findNearbySalons(locationQuery);
+            // FIX: Removed redundant `.data` access. `results` directly holds `Salon[]`.
+            const { data: results, totalTokens } = await callAvalAIProxy<{ data: Salon[]; totalTokens: number }>('findNearbySalons', { locationQuery });
             onTokensUsed(totalTokens);
             await deductTokens(currentUser.id, totalTokens);
             await incrementUsageCount(currentUser.id);
 
 
+            // FIX: Removed redundant `.data` access. `results` directly holds `Salon[]`.
             if (results && results.length > 0) {
                 setSalons(results);
                 setView('results');

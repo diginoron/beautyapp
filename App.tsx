@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import type { AnalysisResult, User } from './types';
-import { analyzeImage } from './services/geminiService';
+import { callAvalAIProxy } from './services/avalaiProxyService'; // New proxy service
 import { supabase } from './services/supabase';
 import { saveAnalysis } from './services/historyService';
 import { checkUserStatus, incrementUsageCount, deductTokens, USAGE_LIMIT } from './services/profileService';
@@ -129,12 +129,14 @@ const App: React.FC = () => {
         }
 
         try {
-            const { data: result, totalTokens } = await analyzeImage(imageBase64);
+            // FIX: Removed redundant `.data` access. `result` directly holds `AnalysisResult`.
+            const { data: result, totalTokens } = await callAvalAIProxy<{ data: AnalysisResult; totalTokens: number }>('analyzeImage', { base64Image: imageBase64 });
             setTotalTokensUsed(prev => prev + totalTokens);
              // Deduct tokens on successful analysis
             await deductTokens(currentUser.id, totalTokens);
             setTokenBalance(prev => prev - totalTokens);
             
+            // FIX: Removed redundant `.data` access. `result` directly holds `AnalysisResult`.
             if(result.isValidFace) {
                  setAnalysis(result);
                  // Increment daily usage count on successful analysis
@@ -159,6 +161,7 @@ const App: React.FC = () => {
                     });
                  }
             } else {
+                // FIX: Removed redundant `.data` access. `result` directly holds `AnalysisResult`.
                 setError(result.errorMessage || 'چهره‌ای در تصویر شناسایی نشد یا تصویر نامعتبر است.');
             }
         } catch (err) {
