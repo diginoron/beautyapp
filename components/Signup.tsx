@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { UserIcon, MailIcon, LockIcon, PhoneIcon } from './icons';
 import { supabase } from '../services/supabase';
@@ -35,7 +36,8 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
             // A database trigger in Supabase is expected to automatically create
             // a corresponding row in the public.profiles table.
             // The 'data' option is used to store metadata that the trigger can use.
-            const { error: signUpError } = await supabase.auth.signUp({
+            // FIX: Added 'as any' type assertion to supabase.auth to resolve "Property 'signUp' does not exist on type 'SupabaseAuthClient'."
+            const { error: signUpError } = await (supabase.auth as any).signUp({
                 email,
                 password,
                 options: {

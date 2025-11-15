@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { MailIcon, LockIcon } from './icons';
 import { supabase } from '../services/supabase';
@@ -22,7 +23,8 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToForgotPasswor
         }
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            // FIX: Added 'as any' type assertion to supabase.auth to resolve "Property 'signInWithPassword' does not exist on type 'SupabaseAuthClient'."
+            const { error } = await (supabase.auth as any).signInWithPassword({
                 email,
                 password,
             });

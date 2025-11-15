@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { callAvalAIProxy } from '../services/avalaiProxyService'; // Use new proxy service
+import * as avalaiService from '../services/avalaiService'; // Use new direct AvalAI service
 import type { ColorHarmonyResult, User } from '../types';
 import { checkUserStatus, deductTokens, incrementUsageCount } from '../services/profileService';
 import ImageInput from './ImageInput';
@@ -37,18 +37,15 @@ const ColorHarmonyFlow: React.FC<ColorHarmonyFlowProps> = ({ currentUser, onBack
                 return;
             }
 
-            // FIX: Removed redundant `.data` access. `apiResult` directly holds `ColorHarmonyResult`.
-            const { data: apiResult, totalTokens } = await callAvalAIProxy<{ data: ColorHarmonyResult; totalTokens: number }>('getColorHarmonySuggestions', { base64Image: image.base64 });
+            const { data: colorHarmonyData, totalTokens } = await avalaiService.getColorHarmonySuggestions(image.base64);
             onTokensUsed(totalTokens);
             await deductTokens(currentUser.id, totalTokens);
             await incrementUsageCount(currentUser.id);
             
-            // FIX: Removed redundant `.data` access. `apiResult` directly holds `ColorHarmonyResult`.
-            if (apiResult.isValidFace) {
-                setResult(apiResult);
+            if (colorHarmonyData.isValidFace) {
+                setResult(colorHarmonyData);
             } else {
-                // FIX: Removed redundant `.data` access. `apiResult` directly holds `ColorHarmonyResult`.
-                setError(apiResult.errorMessage || 'چهره‌ای معتبر در تصویر شناسایی نشد.');
+                setError(colorHarmonyData.errorMessage || 'چهره‌ای معتبر در تصویر شناسایی نشد.');
             }
         } catch (err) {
             console.error("Color harmony suggestions error:", String(err));

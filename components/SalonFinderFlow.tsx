@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { callAvalAIProxy } from '../services/avalaiProxyService'; // Use new proxy service
+import * as avalaiService from '../services/avalaiService'; // Use new direct AvalAI service
 import type { Salon, User } from '../types';
 import { checkUserStatus, deductTokens, incrementUsageCount } from '../services/profileService';
 import Spinner from './Spinner';
@@ -63,16 +63,14 @@ const SalonFinderFlow: React.FC<SalonFinderFlowProps> = ({ currentUser, onBack, 
                 return;
             }
 
-            // FIX: Removed redundant `.data` access. `results` directly holds `Salon[]`.
-            const { data: results, totalTokens } = await callAvalAIProxy<{ data: Salon[]; totalTokens: number }>('findNearbySalons', { locationQuery });
+            const { data: salonData, totalTokens } = await avalaiService.findNearbySalons(locationQuery);
             onTokensUsed(totalTokens);
             await deductTokens(currentUser.id, totalTokens);
             await incrementUsageCount(currentUser.id);
 
 
-            // FIX: Removed redundant `.data` access. `results` directly holds `Salon[]`.
-            if (results && results.length > 0) {
-                setSalons(results);
+            if (salonData && salonData.length > 0) {
+                setSalons(salonData);
                 setView('results');
             } else {
                 setError('متاسفانه سالنی در این منطقه یافت نشد. لطفاً منطقه دیگری را امتحان کنید.');
@@ -91,7 +89,7 @@ const SalonFinderFlow: React.FC<SalonFinderFlowProps> = ({ currentUser, onBack, 
 
     const handleGpsSearch = () => {
         if (!navigator.geolocation) {
-            setError('مرورگر شما از موقعیت‌یابی جغرافیایی پشتیبانی نمی‌کند.');
+            setError('مرورگر شما از موقعیت‌یابی جغرافیایی پشتیبانی نمی‌کات.');
             return;
         }
         setLoadingMessage('در حال دریافت موقعیت مکانی شما...');

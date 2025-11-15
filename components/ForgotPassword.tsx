@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { MailIcon } from './icons';
 import { supabase } from '../services/supabase';
@@ -22,7 +23,8 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onSwitchToLogin }) => {
         }
         
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            // FIX: Added 'as any' type assertion to supabase.auth to resolve "Property 'resetPasswordForEmail' does not exist on type 'SupabaseAuthClient'."
+            const { error } = await (supabase.auth as any).resetPasswordForEmail(email, {
                 redirectTo: window.location.href.replace(/#.*$/, ''), // Redirect back to the app's base URL
             });
             if (error) throw error;

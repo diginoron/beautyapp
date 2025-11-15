@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import type { Session } from '@supabase/supabase-js';
+import type { AuthSession } from '@supabase/supabase-js'; // FIX: Changed Session to AuthSession as per error.
 import type { AnalysisResult, User } from './types';
-import { callAvalAIProxy } from './services/avalaiProxyService'; // New proxy service
+import * as avalaiService from './services/avalaiService'; // New direct AvalAI service
 import { supabase } from './services/supabase';
 import { saveAnalysis } from './services/historyService';
 import { checkUserStatus, incrementUsageCount, deductTokens, USAGE_LIMIT } from './services/profileService';
@@ -25,7 +26,8 @@ import { resizeImageFromFile, resizeImageFromDataUrl } from './services/imageUti
 
 const App: React.FC = () => {
     const [showSplash, setShowSplash] = useState<boolean>(true);
-    const [session, setSession] = useState<Session | null>(null);
+    // FIX: Changed Session to AuthSession as per error.
+    const [session, setSession] = useState<AuthSession | null>(null);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [mode, setMode] = useState<'initial' | 'single' | 'compare' | 'morph' | 'color' | 'salonFinder' | 'history'>('initial');
     
@@ -45,14 +47,16 @@ const App: React.FC = () => {
 
     useEffect(() => {
         const getInitialSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
+            // FIX: Added 'as any' type assertion to supabase.auth to resolve "Property 'getSession' does not exist on type 'SupabaseAuthClient'."
+            const { data: { session } } = await (supabase.auth as any).getSession();
             setSession(session);
             setCurrentUser(session ? { id: session.user.id, email: session.user.email } : null);
         };
 
         getInitialSession();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        // FIX: Added 'as any' type assertion to supabase.auth to resolve "Property 'onAuthStateChange' does not exist on type 'SupabaseAuthClient'."
+        const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((_event, session) => {
             setSession(session);
             setCurrentUser(session ? { id: session.user.id, email: session.user.email } : null);
         });
@@ -129,22 +133,20 @@ const App: React.FC = () => {
         }
 
         try {
-            // FIX: Removed redundant `.data` access. `result` directly holds `AnalysisResult`.
-            const { data: result, totalTokens } = await callAvalAIProxy<{ data: AnalysisResult; totalTokens: number }>('analyzeImage', { base64Image: imageBase64 });
+            const { data: analysisResult, totalTokens } = await avalaiService.analyzeImage(imageBase64);
             setTotalTokensUsed(prev => prev + totalTokens);
              // Deduct tokens on successful analysis
             await deductTokens(currentUser.id, totalTokens);
             setTokenBalance(prev => prev - totalTokens);
             
-            // FIX: Removed redundant `.data` access. `result` directly holds `AnalysisResult`.
-            if(result.isValidFace) {
-                 setAnalysis(result);
+            if(analysisResult.isValidFace) {
+                 setAnalysis(analysisResult);
                  // Increment daily usage count on successful analysis
                  await incrementUsageCount(currentUser.id);
                  setCurrentUsage(prev => prev + 1);
 
                  if (currentUser) {
-                    saveAnalysis(currentUser.id, result, imageBase64).catch(err => {
+                    saveAnalysis(currentUser.id, analysisResult, imageBase64).catch(err => {
                         console.error("Failed to save analysis to history:", err);
                         // Show a non-blocking warning to the user if saving fails
                         if (err instanceof Error) {
@@ -161,8 +163,7 @@ const App: React.FC = () => {
                     });
                  }
             } else {
-                // FIX: Removed redundant `.data` access. `result` directly holds `AnalysisResult`.
-                setError(result.errorMessage || 'چهره‌ای در تصویر شناسایی نشد یا تصویر نامعتبر است.');
+                setError(analysisResult.errorMessage || 'چهره‌ای در تصویر شناسایی نشد یا تصویر نامعتبر است.');
             }
         } catch (err) {
             console.error("Analysis Error:", err);
@@ -203,7 +204,8 @@ const App: React.FC = () => {
     }
     
     const handleLogout = async () => {
-        const { error } = await supabase.auth.signOut();
+        // FIX: Added 'as any' type assertion to supabase.auth to resolve "Property 'signOut' does not exist on type 'SupabaseAuthClient'."
+        const { error } = await (supabase.auth as any).signOut();
         if (error) console.error('Error logging out:', error);
         setIsMenuOpen(false);
         handleReset();

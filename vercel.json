@@ -1,7 +1,5 @@
 {
   "rewrites": [
-    { "source": "/api/avalai-proxy", "destination": "/api/avalai-proxy.ts" },
-    { "source": "/api/avalai-proxy/(.*)", "destination": "/api/avalai-proxy.ts" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

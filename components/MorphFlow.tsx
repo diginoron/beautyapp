@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { callAvalAIProxy } from '../services/avalaiProxyService'; // Use new proxy service
+import * as avalaiService from '../services/avalaiService'; // Use new direct AvalAI service
 import type { MorphResult, User } from '../types';
 import { checkUserStatus, deductTokens, incrementUsageCount } from '../services/profileService';
 import ImageInput from './ImageInput';
@@ -38,18 +38,15 @@ const MorphFlow: React.FC<MorphFlowProps> = ({ currentUser, onBack, onTokensUsed
                 return;
             }
             
-            // FIX: Removed redundant `.data` access. `apiResult` directly holds `MorphResult`.
-            const { data: apiResult, totalTokens } = await callAvalAIProxy<{ data: MorphResult; totalTokens: number }>('getMorphSuggestions', { sourceImageBase64: sourceImage.base64, targetImageBase64: targetImage.base64 });
+            const { data: morphData, totalTokens } = await avalaiService.getMorphSuggestions(sourceImage.base64, targetImage.base64);
             onTokensUsed(totalTokens);
             await deductTokens(currentUser.id, totalTokens);
             await incrementUsageCount(currentUser.id);
             
-            // FIX: Removed redundant `.data` access. `apiResult` directly holds `MorphResult`.
-            if (apiResult.isValid) {
-                setResult(apiResult);
+            if (morphData.isValid) {
+                setResult(morphData);
             } else {
-                // FIX: Removed redundant `.data` access. `apiResult` directly holds `MorphResult`.
-                setError(apiResult.errorMessage || 'چهره‌ای معتبر در یک یا هر دو تصویر شناسایی نشد.');
+                setError(morphData.errorMessage || 'چهره‌ای معتبر در یک یا هر دو تصویر شناسایی نشد.');
             }
         } catch (err) {
             console.error("Morph suggestions error:", String(err));
