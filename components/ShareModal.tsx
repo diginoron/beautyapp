@@ -10,10 +10,11 @@ interface ShareModalProps {
 
 const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, result }) => {
     const [copied, setCopied] = useState(false);
+    const APP_LINK = "https://beauty.diginoron.com/";
 
     const generateShareText = useCallback(() => {
         const features = result.featureAnalysis.slice(0, 2).map(f => f.feature).join('، ');
-        return `من چهره‌ام رو با هوش مصنوعی تحلیل کردم و امتیاز هماهنگی ${result.harmonyScore}/10 گرفتم! 🌟 ویژگی‌های برجسته چهره من: ${features}. شما هم امتحان کنید! #تحلیل_زیبایی_چهره`;
+        return `من چهره‌ام رو با هوش مصنوعی تحلیل کردم و امتیاز هماهنگی ${result.harmonyScore}/10 گرفتم! 🌟 ویژگی‌های برجسته چهره من: ${features}. شما هم امتحان کنید! ${APP_LINK} #تحلیل_زیبایی_چهره`;
     }, [result]);
     
     const handleCopy = useCallback(() => {
